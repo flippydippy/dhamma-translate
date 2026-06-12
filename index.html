@@ -138,14 +138,19 @@
       </select>
     </div>
 
-    <div class="field">
-      <label for="email">Your email <span class="hint">— we send the result here</span></label>
-      <input type="email" id="email" placeholder="you@example.com" required>
-    </div>
-
     <button class="submit" type="submit" id="submitBtn">Submit for translation</button>
     <div class="notice" id="notice"></div>
   </form>
+
+  <div class="card" id="statusCard" style="display:none">
+    <div class="field">
+      <label>Your request</label>
+      <p id="statusText" style="color:var(--muted)">Checking status…</p>
+    </div>
+    <a id="downloadBtn" class="submit" style="display:none; text-align:center; text-decoration:none" download>Download result</a>
+    <button type="button" class="submit" id="refreshBtn" style="background:#fff; color:var(--accent); border:1px solid var(--line)">Check again</button>
+    <div class="notice" id="statusNotice"></div>
+  </div>
 
   <section class="how">
     <h2>How it works</h2>
@@ -153,9 +158,10 @@
       <li>Your file is queued for processing through a translation pipeline built
           for Goenka-tradition materials — terminology, Pāli conventions, and voice
           are checked against a curated glossary and language profile.</li>
-      <li>A human reviews the result before it is sent back to you.</li>
-      <li>You receive the translation (or transcript) by email. Nothing is published
-          without permission.</li>
+      <li>A human reviews the result before it is released.</li>
+      <li>You get a private link when you submit — come back to it any time and
+          download the result once it's ready. Nothing is published without
+          permission.</li>
     </ol>
   </section>
 </main>
@@ -217,15 +223,15 @@
     fd.append("file", f);
     fd.append("kind", kind);
     fd.append("target_lang", $("lang").value);
-    fd.append("email", $("email").value);
     $("submitBtn").disabled = true;
     notice("info", "Uploading…");
     try {
       const r = await fetch(API_URL + "/api/submit", { method: "POST", body: fd });
       const d = await r.json();
       if (!r.ok) throw new Error(d.detail || r.statusText);
-      notice("ok", "Received! Your request id is <strong>" + d.job_id + "</strong>. " +
-        "You'll get the result by email after review.");
+      const link = location.origin + location.pathname + "?job=" + d.job_id;
+      notice("ok", "Received! <strong>Save this link</strong> — your result will be " +
+        "available there once it's ready:<br><a href=\"" + link + "\">" + link + "</a>");
       resetFile();
     } catch (err) {
       notice("err", "Something went wrong: " + err.message);
@@ -233,6 +239,41 @@
       $("submitBtn").disabled = false;
     }
   });
+
+  // ---- status view (?job=<id>) ----
+  const jobId = new URLSearchParams(location.search).get("job");
+  if (jobId) {
+    $("form").style.display = "none";
+    document.querySelector(".tabs").style.display = "none";
+    $("statusCard").style.display = "block";
+    const sNotice = (cls, msg) => { const n = $("statusNotice"); n.className = "notice " + cls; n.innerHTML = msg; };
+    async function check() {
+      if (!API_URL) return sNotice("info", "The processing service is being set up — check back soon.");
+      $("statusText").textContent = "Checking status…";
+      try {
+        const r = await fetch(API_URL + "/api/status/" + encodeURIComponent(jobId));
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.detail || r.statusText);
+        if (d.ready) {
+          $("statusText").innerHTML = "Request <strong>" + d.job_id + "</strong> — your " +
+            (d.kind === "audio" ? "transcript" : "translation") + " is ready.";
+          $("downloadBtn").href = API_URL + "/api/download/" + encodeURIComponent(jobId);
+          $("downloadBtn").style.display = "block";
+          $("refreshBtn").style.display = "none";
+          sNotice("ok", "Reviewed and released. Bhavatu sabba maṅgalaṃ.");
+        } else {
+          $("statusText").innerHTML = "Request <strong>" + d.job_id + "</strong> — status: <strong>" +
+            d.status + "</strong>. Every result is reviewed by a person before release, so this " +
+            "can take a little while. This page is your receipt — check back any time.";
+        }
+      } catch (e) {
+        $("statusText").textContent = "";
+        sNotice("err", "Couldn't find that request: " + e.message);
+      }
+    }
+    $("refreshBtn").addEventListener("click", check);
+    check();
+  }
 </script>
 </body>
 </html>
