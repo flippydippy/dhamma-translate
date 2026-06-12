@@ -6,7 +6,7 @@
 <title>Dhamma Translate — translation &amp; transcription of Dhamma materials</title>
 <meta name="description" content="Upload a PDF for translation or audio for transcription of S.N. Goenka Vipassana-tradition Dhamma materials. English and Persian.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&family=Vazirmatn:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#faf7f2; --ink:#2b2520; --muted:#7a6f63; --line:#e7dfd3;
@@ -16,11 +16,10 @@
   *{box-sizing:border-box; margin:0; padding:0}
   body{
     background:var(--bg); color:var(--ink);
-    font-family:'Inter','Vazirmatn',system-ui,sans-serif;
+    font-family:'Inter',system-ui,sans-serif;
     line-height:1.6; min-height:100vh;
     display:flex; flex-direction:column; align-items:center;
   }
-  .fa{font-family:'Vazirmatn','Inter',sans-serif}
   header{
     width:100%; max-width:880px; padding:56px 24px 8px; text-align:center;
   }
@@ -32,11 +31,9 @@
     font-family:'Source Serif 4',serif; font-weight:600;
     font-size:clamp(30px,5vw,44px); line-height:1.15; margin-bottom:14px;
   }
-  h1 .fa{font-weight:500}
   .lede{
     color:var(--muted); max-width:560px; margin:0 auto 8px; font-size:16.5px;
   }
-  .lede .fa{display:block; margin-top:6px; direction:rtl}
   main{width:100%; max-width:880px; padding:32px 24px 24px}
   .tabs{
     display:flex; gap:10px; justify-content:center; margin-bottom:26px;
@@ -66,16 +63,11 @@
   .drop strong{color:var(--accent)}
   .drop .picked{color:var(--ink); font-weight:500; word-break:break-all}
   input[type=file]{display:none}
-  .langs{display:flex; gap:10px}
-  .lang{
-    flex:1; border:1px solid var(--line); border-radius:10px; padding:13px 6px;
-    background:#fff; text-align:center; cursor:pointer; font-size:15px;
-    transition:all .15s;
+  select#lang{
+    width:100%; padding:12px 14px; border:1px solid var(--line);
+    border-radius:10px; font:inherit; font-size:15px; background:#fff;
+    appearance:auto; cursor:pointer;
   }
-  .lang[aria-pressed="true"]{
-    border-color:var(--accent); background:var(--accent-soft); font-weight:600;
-  }
-  .lang .native{display:block; font-size:13px; color:var(--muted)}
   input[type=email]{
     width:100%; padding:12px 14px; border:1px solid var(--line);
     border-radius:10px; font:inherit; font-size:15px; background:#fff;
@@ -109,7 +101,6 @@
     color:var(--muted); font-size:13.5px;
   }
   footer .pali{font-style:italic}
-  footer .fa{direction:rtl; margin-top:4px}
   @media (max-width:560px){ .card{padding:24px 18px} }
 </style>
 </head>
@@ -117,11 +108,10 @@
 
 <header>
   <div class="mark">Dhamma Translate</div>
-  <h1>Dhamma teachings, carried across languages<br><span class="fa">آموزه‌های دامما، از زبانی به زبانِ دیگر</span></h1>
+  <h1>Dhamma teachings, carried across languages</h1>
   <p class="lede">
     Upload a PDF to translate, or an audio discourse to transcribe — in the
     tradition of S.N. Goenka.
-    <span class="fa">یک فایل پی‌دی‌اف برای ترجمه یا یک فایل صوتی برای پیاده‌سازی بفرست — در سنّتِ اس. ان. گوینکا.</span>
   </p>
 </header>
 
@@ -142,14 +132,10 @@
 
     <div class="field">
       <label>Output language</label>
-      <div class="langs" id="langs">
-        <button type="button" class="lang" data-lang="fa" aria-pressed="true">
-          Persian <span class="native fa">فارسی</span>
-        </button>
-        <button type="button" class="lang" data-lang="en" aria-pressed="false">
-          English <span class="native">English</span>
-        </button>
-      </div>
+      <select id="lang">
+        <option value="fa" selected>Persian</option>
+        <option value="en">English</option>
+      </select>
     </div>
 
     <div class="field">
@@ -176,8 +162,7 @@
 
 <footer>
   <div class="pali">Bhavatu sabba maṅgalaṃ</div>
-  <div class="fa">باشد که همه موجودات شاد باشند</div>
-</footer>
+  </footer>
 
 <script>
   // Set to the intake service URL once deployed (Cloud Run). While empty, the
@@ -187,7 +172,6 @@
 
   const $ = id => document.getElementById(id);
   let kind = "pdf";
-  let lang = "fa";
 
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
     kind = t.dataset.kind;
@@ -199,11 +183,6 @@
     $("file").accept = pdf ? ".pdf" : ".mp3,.m4a,.wav,.aac,.ogg";
     $("submitBtn").textContent = pdf ? "Submit for translation" : "Submit for transcription";
     resetFile();
-  }));
-
-  document.querySelectorAll(".lang").forEach(b => b.addEventListener("click", () => {
-    lang = b.dataset.lang;
-    document.querySelectorAll(".lang").forEach(x => x.setAttribute("aria-pressed", x === b));
   }));
 
   const drop = $("drop"), fileInput = $("file");
@@ -232,12 +211,12 @@
     if (f.size > MAX_MB[kind] * 1048576) return notice("err", "File too large — the limit is " + MAX_MB[kind] + " MB.");
     if (!API_URL) {
       return notice("info", "Submissions open soon — the processing service is being set up. " +
-        "Please check back shortly. <span class=\"fa\">به‌زودی! سرویس پردازش در حال راه‌اندازی است.</span>");
+        "Please check back shortly.");
     }
     const fd = new FormData();
     fd.append("file", f);
     fd.append("kind", kind);
-    fd.append("target_lang", lang);
+    fd.append("target_lang", $("lang").value);
     fd.append("email", $("email").value);
     $("submitBtn").disabled = true;
     notice("info", "Uploading…");
@@ -246,7 +225,7 @@
       const d = await r.json();
       if (!r.ok) throw new Error(d.detail || r.statusText);
       notice("ok", "Received! Your request id is <strong>" + d.job_id + "</strong>. " +
-        "You'll get the result by email after review. <span class=\"fa\">دریافت شد — نتیجه پس از بازبینی به ایمیلت فرستاده می‌شود.</span>");
+        "You'll get the result by email after review.");
       resetFile();
     } catch (err) {
       notice("err", "Something went wrong: " + err.message);
