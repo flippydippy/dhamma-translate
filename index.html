@@ -133,8 +133,8 @@
     <div class="field">
       <label>Output language</label>
       <select id="lang">
-        <option value="fa" selected>Persian</option>
-        <option value="en">English</option>
+        <option value="en" selected>English</option>
+        <option value="fa">Persian</option>
       </select>
     </div>
 
@@ -155,13 +155,12 @@
   <section class="how">
     <h2>How it works</h2>
     <ol>
-      <li>Your file is queued for processing through a translation pipeline built
-          for Goenka-tradition materials — terminology, Pāli conventions, and voice
-          are checked against a curated glossary and language profile.</li>
-      <li>A human reviews the result before it is released.</li>
-      <li>You get a private link when you submit — come back to it any time and
-          download the result once it's ready. Nothing is published without
-          permission.</li>
+      <li>Upload your PDF or audio file and choose the output language.</li>
+      <li>It is processed through a pipeline built for Goenka-tradition
+          materials — terminology, Pāli conventions, and voice are checked
+          against a curated glossary and language profile.</li>
+      <li>Save the private link you receive — your result will be there to
+          download as soon as it's ready.</li>
     </ol>
   </section>
 </main>
@@ -260,11 +259,11 @@
           $("downloadBtn").href = API_URL + "/api/download/" + encodeURIComponent(jobId);
           $("downloadBtn").style.display = "block";
           $("refreshBtn").style.display = "none";
-          sNotice("ok", "Reviewed and released. Bhavatu sabba maṅgalaṃ.");
+          sNotice("ok", "Ready. Bhavatu sabba maṅgalaṃ.");
         } else {
           $("statusText").innerHTML = "Request <strong>" + d.job_id + "</strong> — status: <strong>" +
-            d.status + "</strong>. Every result is reviewed by a person before release, so this " +
-            "can take a little while. This page is your receipt — check back any time.";
+            d.status + "</strong>. Processing can take a while for longer files. " +
+            "This page is your receipt — check back any time.";
         }
       } catch (e) {
         $("statusText").textContent = "";
