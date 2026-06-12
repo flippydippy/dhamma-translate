@@ -173,7 +173,7 @@
   // Set to the intake service URL once deployed (Cloud Run). While empty, the
   // form explains that submissions aren't open yet.
   const API_URL = "";
-  const MAX_MB = { pdf: 50, audio: 200 };
+  const MAX_MB = { pdf: 50, audio: 500 };
 
   const $ = id => document.getElementById(id);
   let kind = "pdf";
@@ -184,8 +184,8 @@
     const pdf = kind === "pdf";
     $("fileLabel").innerHTML = pdf
       ? 'PDF file <span class="hint">(up to 50 MB)</span>'
-      : 'Audio file <span class="hint">(mp3 / m4a / wav, up to 200 MB)</span>';
-    $("file").accept = pdf ? ".pdf" : ".mp3,.m4a,.wav,.aac,.ogg";
+      : 'Audio file <span class="hint">(mp3 / m4a / wav, up to 500 MB)</span>';
+    $("file").accept = pdf ? ".pdf,application/pdf" : "audio/*,.mp3,.m4a,.wav,.aac,.ogg";
     $("submitBtn").textContent = pdf ? "Submit for translation" : "Submit for transcription";
     resetFile();
   }));
@@ -218,15 +218,38 @@
       return notice("info", "Submissions open soon — the processing service is being set up. " +
         "Please check back shortly.");
     }
-    const fd = new FormData();
-    fd.append("file", f);
-    fd.append("kind", kind);
-    fd.append("target_lang", $("lang").value);
     $("submitBtn").disabled = true;
-    notice("info", "Uploading…");
+    notice("info", "Preparing upload…");
     try {
-      const r = await fetch(API_URL + "/api/submit", { method: "POST", body: fd });
-      const d = await r.json();
+      // 1. create the job
+      let r = await fetch(API_URL + "/api/create", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, target_lang: $("lang").value,
+                               filename: f.name, size: f.size })
+      });
+      let d = await r.json();
+      if (!r.ok) throw new Error(d.detail || r.statusText);
+      const jobIdNew = d.job_id, partSize = d.part_size;
+      // 2. upload the file in parts, one at a time
+      const nParts = Math.max(1, Math.ceil(f.size / partSize));
+      for (let i = 0; i < nParts; i++) {
+        notice("info", "Uploading… part " + (i + 1) + " of " + nParts +
+               " (" + Math.round(100 * i / nParts) + "%)");
+        const slice = f.slice(i * partSize, Math.min((i + 1) * partSize, f.size));
+        const pr = await fetch(API_URL + "/api/upload/" + jobIdNew + "/" + i, {
+          method: "POST", headers: { "Content-Type": "application/octet-stream" },
+          body: slice
+        });
+        if (!pr.ok) { const pd = await pr.json().catch(() => ({}));
+          throw new Error("part " + (i + 1) + ": " + (pd.detail || pr.statusText)); }
+      }
+      // 3. finalize
+      notice("info", "Finishing…");
+      r = await fetch(API_URL + "/api/finalize/" + jobIdNew, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parts: nParts })
+      });
+      d = await r.json();
       if (!r.ok) throw new Error(d.detail || r.statusText);
       const link = location.origin + location.pathname + "?job=" + d.job_id;
       notice("ok", "Received! <strong>Save this link</strong> — your result will be " +
