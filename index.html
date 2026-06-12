@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dhamma Translate — translation &amp; transcription of Dhamma materials</title>
+<meta name="description" content="Upload a PDF for translation or audio for transcription of S.N. Goenka Vipassana-tradition Dhamma materials. English and Persian.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&family=Vazirmatn:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf7f2; --ink:#2b2520; --muted:#7a6f63; --line:#e7dfd3;
+    --accent:#8a3324; --accent-soft:#f3e6e1; --gold:#b98a2f;
+    --card:#fffdf9; --radius:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Inter','Vazirmatn',system-ui,sans-serif;
+    line-height:1.6; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .fa{font-family:'Vazirmatn','Inter',sans-serif}
+  header{
+    width:100%; max-width:880px; padding:56px 24px 8px; text-align:center;
+  }
+  .mark{
+    font-family:'Source Serif 4',serif; font-size:15px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--gold); margin-bottom:18px;
+  }
+  h1{
+    font-family:'Source Serif 4',serif; font-weight:600;
+    font-size:clamp(30px,5vw,44px); line-height:1.15; margin-bottom:14px;
+  }
+  h1 .fa{font-weight:500}
+  .lede{
+    color:var(--muted); max-width:560px; margin:0 auto 8px; font-size:16.5px;
+  }
+  .lede .fa{display:block; margin-top:6px; direction:rtl}
+  main{width:100%; max-width:880px; padding:32px 24px 24px}
+  .tabs{
+    display:flex; gap:10px; justify-content:center; margin-bottom:26px;
+  }
+  .tab{
+    border:1px solid var(--line); background:var(--card); color:var(--ink);
+    padding:10px 22px; border-radius:999px; font-size:15px; font-weight:500;
+    cursor:pointer; transition:all .15s ease;
+  }
+  .tab[aria-selected="true"]{
+    background:var(--accent); border-color:var(--accent); color:#fff;
+  }
+  .card{
+    background:var(--card); border:1px solid var(--line);
+    border-radius:var(--radius); padding:34px; max-width:560px; margin:0 auto;
+    box-shadow:0 1px 2px rgba(43,37,32,.04), 0 8px 28px rgba(43,37,32,.05);
+  }
+  .field{margin-bottom:22px}
+  label{display:block; font-weight:600; font-size:14px; margin-bottom:8px}
+  label .hint{font-weight:400; color:var(--muted)}
+  .drop{
+    border:1.5px dashed var(--line); border-radius:10px; padding:30px 18px;
+    text-align:center; color:var(--muted); cursor:pointer; font-size:15px;
+    transition:border-color .15s, background .15s;
+  }
+  .drop:hover,.drop.drag{border-color:var(--accent); background:var(--accent-soft)}
+  .drop strong{color:var(--accent)}
+  .drop .picked{color:var(--ink); font-weight:500; word-break:break-all}
+  input[type=file]{display:none}
+  .langs{display:flex; gap:10px}
+  .lang{
+    flex:1; border:1px solid var(--line); border-radius:10px; padding:13px 6px;
+    background:#fff; text-align:center; cursor:pointer; font-size:15px;
+    transition:all .15s;
+  }
+  .lang[aria-pressed="true"]{
+    border-color:var(--accent); background:var(--accent-soft); font-weight:600;
+  }
+  .lang .native{display:block; font-size:13px; color:var(--muted)}
+  input[type=email]{
+    width:100%; padding:12px 14px; border:1px solid var(--line);
+    border-radius:10px; font:inherit; font-size:15px; background:#fff;
+  }
+  input[type=email]:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
+  button.submit{
+    width:100%; padding:14px; border:none; border-radius:10px;
+    background:var(--accent); color:#fff; font:inherit; font-size:16px;
+    font-weight:600; cursor:pointer; transition:filter .15s;
+  }
+  button.submit:hover{filter:brightness(1.08)}
+  button.submit:disabled{background:#c9beb2; cursor:not-allowed}
+  .notice{
+    margin-top:18px; padding:14px 16px; border-radius:10px; font-size:14.5px;
+    display:none;
+  }
+  .notice.info{display:block; background:#f4ecdc; color:#6a5320; border:1px solid #e4d4ae}
+  .notice.ok{display:block; background:#e8f0e4; color:#2f5226; border:1px solid #c7dbbd}
+  .notice.err{display:block; background:var(--accent-soft); color:var(--accent); border:1px solid #e0c3ba}
+  .how{
+    max-width:560px; margin:40px auto 0; color:var(--muted); font-size:14.5px;
+  }
+  .how h2{
+    font-family:'Source Serif 4',serif; font-size:18px; color:var(--ink);
+    margin-bottom:10px; font-weight:600;
+  }
+  .how ol{padding-left:20px}
+  .how li{margin-bottom:6px}
+  footer{
+    width:100%; max-width:880px; padding:48px 24px 36px; text-align:center;
+    color:var(--muted); font-size:13.5px;
+  }
+  footer .pali{font-style:italic}
+  footer .fa{direction:rtl; margin-top:4px}
+  @media (max-width:560px){ .card{padding:24px 18px} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark">Dhamma Translate</div>
+  <h1>Dhamma teachings, carried across languages<br><span class="fa">آموزه‌های دامما، از زبانی به زبانِ دیگر</span></h1>
+  <p class="lede">
+    Upload a PDF to translate, or an audio discourse to transcribe — in the
+    tradition of S.N. Goenka.
+    <span class="fa">یک فایل پی‌دی‌اف برای ترجمه یا یک فایل صوتی برای پیاده‌سازی بفرست — در سنّتِ اس. ان. گوینکا.</span>
+  </p>
+</header>
+
+<main>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-kind="pdf">Translate a PDF</button>
+    <button class="tab" role="tab" aria-selected="false" data-kind="audio">Transcribe audio</button>
+  </div>
+
+  <form class="card" id="form">
+    <div class="field">
+      <label id="fileLabel">PDF file <span class="hint">(up to 50 MB)</span></label>
+      <div class="drop" id="drop" tabindex="0" role="button">
+        <span id="dropText">Drop the file here or <strong>browse</strong></span>
+      </div>
+      <input type="file" id="file" accept=".pdf">
+    </div>
+
+    <div class="field">
+      <label>Output language</label>
+      <div class="langs" id="langs">
+        <button type="button" class="lang" data-lang="fa" aria-pressed="true">
+          Persian <span class="native fa">فارسی</span>
+        </button>
+        <button type="button" class="lang" data-lang="en" aria-pressed="false">
+          English <span class="native">English</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="email">Your email <span class="hint">— we send the result here</span></label>
+      <input type="email" id="email" placeholder="you@example.com" required>
+    </div>
+
+    <button class="submit" type="submit" id="submitBtn">Submit for translation</button>
+    <div class="notice" id="notice"></div>
+  </form>
+
+  <section class="how">
+    <h2>How it works</h2>
+    <ol>
+      <li>Your file is queued for processing through a translation pipeline built
+          for Goenka-tradition materials — terminology, Pāli conventions, and voice
+          are checked against a curated glossary and language profile.</li>
+      <li>A human reviews the result before it is sent back to you.</li>
+      <li>You receive the translation (or transcript) by email. Nothing is published
+          without permission.</li>
+    </ol>
+  </section>
+</main>
+
+<footer>
+  <div class="pali">Bhavatu sabba maṅgalaṃ</div>
+  <div class="fa">باشد که همه موجودات شاد باشند</div>
+</footer>
+
+<script>
+  // Set to the intake service URL once deployed (Cloud Run). While empty, the
+  // form explains that submissions aren't open yet.
+  const API_URL = "";
+  const MAX_MB = { pdf: 50, audio: 200 };
+
+  const $ = id => document.getElementById(id);
+  let kind = "pdf";
+  let lang = "fa";
+
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+    kind = t.dataset.kind;
+    document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
+    const pdf = kind === "pdf";
+    $("fileLabel").innerHTML = pdf
+      ? 'PDF file <span class="hint">(up to 50 MB)</span>'
+      : 'Audio file <span class="hint">(mp3 / m4a / wav, up to 200 MB)</span>';
+    $("file").accept = pdf ? ".pdf" : ".mp3,.m4a,.wav,.aac,.ogg";
+    $("submitBtn").textContent = pdf ? "Submit for translation" : "Submit for transcription";
+    resetFile();
+  }));
+
+  document.querySelectorAll(".lang").forEach(b => b.addEventListener("click", () => {
+    lang = b.dataset.lang;
+    document.querySelectorAll(".lang").forEach(x => x.setAttribute("aria-pressed", x === b));
+  }));
+
+  const drop = $("drop"), fileInput = $("file");
+  drop.addEventListener("click", () => fileInput.click());
+  drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") fileInput.click(); });
+  ["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); }));
+  ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); }));
+  drop.addEventListener("drop", e => { if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; showFile(); } });
+  fileInput.addEventListener("change", showFile);
+
+  function showFile() {
+    const f = fileInput.files[0];
+    if (!f) return;
+    $("dropText").innerHTML = '<span class="picked">' + f.name + "</span> (" + (f.size/1048576).toFixed(1) + " MB)";
+  }
+  function resetFile() {
+    fileInput.value = "";
+    $("dropText").innerHTML = 'Drop the file here or <strong>browse</strong>';
+  }
+  function notice(cls, msg) { const n = $("notice"); n.className = "notice " + cls; n.innerHTML = msg; }
+
+  $("form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const f = fileInput.files[0];
+    if (!f) return notice("err", "Please choose a file first.");
+    if (f.size > MAX_MB[kind] * 1048576) return notice("err", "File too large — the limit is " + MAX_MB[kind] + " MB.");
+    if (!API_URL) {
+      return notice("info", "Submissions open soon — the processing service is being set up. " +
+        "Please check back shortly. <span class=\"fa\">به‌زودی! سرویس پردازش در حال راه‌اندازی است.</span>");
+    }
+    const fd = new FormData();
+    fd.append("file", f);
+    fd.append("kind", kind);
+    fd.append("target_lang", lang);
+    fd.append("email", $("email").value);
+    $("submitBtn").disabled = true;
+    notice("info", "Uploading…");
+    try {
+      const r = await fetch(API_URL + "/api/submit", { method: "POST", body: fd });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || r.statusText);
+      notice("ok", "Received! Your request id is <strong>" + d.job_id + "</strong>. " +
+        "You'll get the result by email after review. <span class=\"fa\">دریافت شد — نتیجه پس از بازبینی به ایمیلت فرستاده می‌شود.</span>");
+      resetFile();
+    } catch (err) {
+      notice("err", "Something went wrong: " + err.message);
+    } finally {
+      $("submitBtn").disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
