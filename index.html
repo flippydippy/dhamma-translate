@@ -68,11 +68,11 @@
     border-radius:10px; font:inherit; font-size:15px; background:#fff;
     appearance:auto; cursor:pointer;
   }
-  input[type=email]{
+  input[type=email], input[type=text], input[type=password]{
     width:100%; padding:12px 14px; border:1px solid var(--line);
     border-radius:10px; font:inherit; font-size:15px; background:#fff;
   }
-  input[type=email]:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
+  input[type=email]:focus, input[type=text]:focus, input[type=password]:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
   button.submit{
     width:100%; padding:14px; border:none; border-radius:10px;
     background:var(--accent); color:#fff; font:inherit; font-size:16px;
@@ -113,9 +113,25 @@
     Upload a PDF to translate, or an audio discourse to transcribe — in the
     tradition of S.N. Goenka.
   </p>
+  <button type="button" id="logoutBtn" style="display:none; margin-top:14px; background:none; border:none; color:var(--muted); font:inherit; font-size:13px; text-decoration:underline; cursor:pointer">Sign out</button>
 </header>
 
-<main>
+<div class="card" id="loginCard" style="max-width:380px; display:none">
+  <div class="field">
+    <label for="username">Username</label>
+    <input type="text" id="username" autocomplete="username" autocapitalize="off">
+  </div>
+  <div class="field">
+    <label for="password">Password</label>
+    <input type="password" id="password" autocomplete="current-password">
+  </div>
+  <button class="submit" type="button" id="loginBtn">Sign in</button>
+  <div class="notice" id="loginNotice"></div>
+  <p style="margin-top:14px; color:var(--muted); font-size:13px; text-align:center">
+    Accounts are issued by the administrator — there is no sign-up.</p>
+</div>
+
+<main id="app" style="display:none">
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" aria-selected="true" data-kind="pdf">Translate a PDF</button>
     <button class="tab" role="tab" aria-selected="false" data-kind="audio">Transcribe audio</button>
@@ -178,6 +194,70 @@
   const $ = id => document.getElementById(id);
   let kind = "pdf";
 
+  // ---- auth (admin-provisioned; whole site behind login) ----
+  const TKEY = "dt_token", EKEY = "dt_exp";
+  const token = () => {
+    const t = localStorage.getItem(TKEY), e = +localStorage.getItem(EKEY) || 0;
+    if (!t || Date.now() > e) { return null; }
+    return t;
+  };
+  const setToken = (t, ttl) => {
+    localStorage.setItem(TKEY, t);
+    localStorage.setItem(EKEY, String(Date.now() + (ttl - 60) * 1000));
+  };
+  const clearToken = () => { localStorage.removeItem(TKEY); localStorage.removeItem(EKEY); };
+
+  class AuthError extends Error {}
+  async function authedFetch(path, opts = {}) {
+    const t = token();
+    if (!t) { showLogin(); throw new AuthError("not signed in"); }
+    const headers = Object.assign({}, opts.headers, { "Authorization": "Bearer " + t });
+    const r = await fetch(API_URL + path, Object.assign({}, opts, { headers }));
+    if (r.status === 401) { clearToken(); showLogin("Your session expired — sign in again."); throw new AuthError("session expired"); }
+    return r;
+  }
+
+  function showApp() {
+    $("loginCard").style.display = "none";
+    $("logoutBtn").style.display = "inline";
+    // status view vs upload view is decided below by ?job=
+    if (jobId) { $("statusCard").style.display = "block"; check(); }
+    else { $("app").style.display = "block"; }
+  }
+  function showLogin(msg) {
+    $("app").style.display = "none";
+    $("statusCard").style.display = "none";
+    $("logoutBtn").style.display = "none";
+    $("loginCard").style.display = "block";
+    if (msg) { const n = $("loginNotice"); n.className = "notice info"; n.textContent = msg; }
+  }
+
+  $("logoutBtn").addEventListener("click", () => { clearToken(); showLogin("Signed out."); });
+  $("loginBtn").addEventListener("click", doLogin);
+  $("password").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+
+  async function doLogin() {
+    const n = $("loginNotice");
+    const u = $("username").value.trim(), p = $("password").value;
+    if (!u || !p) { n.className = "notice err"; n.textContent = "Enter username and password."; return; }
+    $("loginBtn").disabled = true;
+    n.className = "notice info"; n.textContent = "Signing in…";
+    try {
+      const r = await fetch(API_URL + "/api/login", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: u, password: p })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || r.statusText);
+      setToken(d.token, d.expires_in);
+      $("password").value = "";
+      n.className = "notice"; n.textContent = "";
+      showApp();
+    } catch (e) {
+      n.className = "notice err"; n.textContent = "Sign-in failed: " + e.message;
+    } finally { $("loginBtn").disabled = false; }
+  }
+
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
     kind = t.dataset.kind;
     document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
@@ -222,7 +302,7 @@
     notice("info", "Preparing upload…");
     try {
       // 1. create the job
-      let r = await fetch(API_URL + "/api/create", {
+      let r = await authedFetch("/api/create", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind, target_lang: $("lang").value,
                                filename: f.name, size: f.size })
@@ -236,7 +316,7 @@
         notice("info", "Uploading… part " + (i + 1) + " of " + nParts +
                " (" + Math.round(100 * i / nParts) + "%)");
         const slice = f.slice(i * partSize, Math.min((i + 1) * partSize, f.size));
-        const pr = await fetch(API_URL + "/api/upload/" + jobIdNew + "/" + i, {
+        const pr = await authedFetch("/api/upload/" + jobIdNew + "/" + i, {
           method: "POST", headers: { "Content-Type": "application/octet-stream" },
           body: slice
         });
@@ -245,7 +325,7 @@
       }
       // 3. finalize
       notice("info", "Finishing…");
-      r = await fetch(API_URL + "/api/finalize/" + jobIdNew, {
+      r = await authedFetch("/api/finalize/" + jobIdNew, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ parts: nParts })
       });
@@ -256,6 +336,7 @@
         "available there once it's ready:<br><a href=\"" + link + "\">" + link + "</a>");
       resetFile();
     } catch (err) {
+      if (err instanceof AuthError) return;     // showLogin already fired
       notice("err", "Something went wrong: " + err.message);
     } finally {
       $("submitBtn").disabled = false;
@@ -264,38 +345,57 @@
 
   // ---- status view (?job=<id>) ----
   const jobId = new URLSearchParams(location.search).get("job");
-  if (jobId) {
-    $("form").style.display = "none";
-    document.querySelector(".tabs").style.display = "none";
-    $("statusCard").style.display = "block";
-    const sNotice = (cls, msg) => { const n = $("statusNotice"); n.className = "notice " + cls; n.innerHTML = msg; };
-    async function check() {
-      if (!API_URL) return sNotice("info", "The processing service is being set up — check back soon.");
-      $("statusText").textContent = "Checking status…";
-      try {
-        const r = await fetch(API_URL + "/api/status/" + encodeURIComponent(jobId));
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.detail || r.statusText);
-        if (d.ready) {
-          $("statusText").innerHTML = "Request <strong>" + d.job_id + "</strong> — your " +
-            (d.kind === "audio" ? "transcript" : "translation") + " is ready.";
-          $("downloadBtn").href = API_URL + "/api/download/" + encodeURIComponent(jobId);
-          $("downloadBtn").style.display = "block";
-          $("refreshBtn").style.display = "none";
-          sNotice("ok", "Ready. Bhavatu sabba maṅgalaṃ.");
-        } else {
-          $("statusText").innerHTML = "Request <strong>" + d.job_id + "</strong> — status: <strong>" +
-            d.status + "</strong>. Processing can take a while for longer files. " +
-            "This page is your receipt — check back any time.";
-        }
-      } catch (e) {
-        $("statusText").textContent = "";
-        sNotice("err", "Couldn't find that request: " + e.message);
+  const sNotice = (cls, msg) => { const n = $("statusNotice"); n.className = "notice " + cls; n.innerHTML = msg; };
+  let lastResultName = "result";
+
+  async function check() {
+    $("statusText").textContent = "Checking status…";
+    try {
+      const r = await authedFetch("/api/status/" + encodeURIComponent(jobId));
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || r.statusText);
+      lastResultName = d.result_name || ((d.kind === "audio" ? "transcript.txt" : "result.md"));
+      if (d.ready) {
+        $("statusText").innerHTML = "Request <strong>" + d.job_id + "</strong> — your " +
+          (d.kind === "audio" ? "transcript" : "translation") + " is ready.";
+        $("downloadBtn").style.display = "block";
+        $("refreshBtn").style.display = "none";
+        sNotice("ok", "Ready. Bhavatu sabba maṅgalaṃ.");
+      } else if (d.status === "error") {
+        $("statusText").innerHTML = "Request <strong>" + d.job_id + "</strong> could not be processed.";
+        sNotice("err", "Processing failed. Please re-upload, or contact the administrator.");
+      } else {
+        $("statusText").innerHTML = "Request <strong>" + d.job_id + "</strong> — status: <strong>" +
+          d.status + "</strong>. Processing is automatic and usually takes a few minutes. " +
+          "This page is your receipt — check back any time.";
       }
+    } catch (e) {
+      if (e instanceof AuthError) return;
+      $("statusText").textContent = "";
+      sNotice("err", "Couldn't find that request: " + e.message);
     }
-    $("refreshBtn").addEventListener("click", check);
-    check();
   }
+
+  // download via authed fetch -> blob (a plain link can't carry the token)
+  $("downloadBtn").addEventListener("click", async () => {
+    try {
+      const r = await authedFetch("/api/download/" + encodeURIComponent(jobId));
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || r.statusText); }
+      const blob = await r.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = lastResultName;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      if (e instanceof AuthError) return;
+      sNotice("err", "Download failed: " + e.message);
+    }
+  });
+  $("refreshBtn").addEventListener("click", check);
+
+  // ---- on load: gate the whole site behind login ----
+  if (token()) showApp(); else showLogin();
 </script>
 </body>
 </html>
