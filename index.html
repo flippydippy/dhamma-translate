@@ -287,7 +287,7 @@
     fileInput.value = "";
     $("dropText").innerHTML = 'Drop the file here or <strong>browse</strong>';
   }
-  function notice(cls, msg) { const n = $("notice"); n.className = "notice " + cls; n.innerHTML = msg; }
+  function notice(cls, msg) { const n = $("notice"); n.className = "notice " + cls; n.textContent = msg; }
 
   $("form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -332,8 +332,10 @@
       d = await r.json();
       if (!r.ok) throw new Error(d.detail || r.statusText);
       const link = location.origin + location.pathname + "?job=" + d.job_id;
-      notice("ok", "Received! <strong>Save this link</strong> — your result will be " +
-        "available there once it's ready:<br><a href=\"" + link + "\">" + link + "</a>");
+      const n = $("notice"); n.className = "notice ok";
+      n.textContent = "Received! Save this link — your result will be available there once it's ready: ";
+      const a = document.createElement("a"); a.href = link; a.textContent = link;
+      n.appendChild(a);
       resetFile();
     } catch (err) {
       if (err instanceof AuthError) return;     // showLogin already fired
@@ -345,7 +347,7 @@
 
   // ---- status view (?job=<id>) ----
   const jobId = new URLSearchParams(location.search).get("job");
-  const sNotice = (cls, msg) => { const n = $("statusNotice"); n.className = "notice " + cls; n.innerHTML = msg; };
+  const sNotice = (cls, msg) => { const n = $("statusNotice"); n.className = "notice " + cls; n.textContent = msg; };
   let lastResultName = "result";
 
   async function check() {
