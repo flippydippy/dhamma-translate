@@ -177,6 +177,7 @@
     <div id="subStatus" style="display:none; margin-top:12px; color:var(--muted); font-size:13.5px">
       <span class="spinner" id="subSpinner" style="margin-left:0; margin-right:8px"></span><span id="subStatusText"></span>
     </div>
+    <p id="subNote" style="display:none; margin-top:12px; color:var(--muted); font-size:12.5px; line-height:1.5"></p>
     <button type="button" class="submit" id="refreshBtn" style="margin-top:10px; background:#fff; color:var(--accent); border:1px solid var(--line)">Check again</button>
     <div class="notice" id="statusNotice"></div>
   </div>
@@ -391,6 +392,14 @@
           lastSubName = d.subtitle_name || "subtitles.srt";
           $("subBtn").style.display = "block";
           $("subStatus").style.display = "none";
+          $("subNote").style.display = "block";
+          $("subNote").textContent =
+            "About the subtitles: the wording is from the reviewed transcript, " +
+            "but the timing is generated automatically by speech recognition. " +
+            "It is accurate through most of the talk, but the timing can drift " +
+            "around Pāli chanting and terms, where the speech recognizer cannot " +
+            "follow the words. Please review and fine-tune the timing in a " +
+            "subtitle editor before publishing.";
           sNotice("ok", "Ready.");
         } else if (d.subtitles_status === "generating") {
           // transcript is downloadable now; subtitles fill in — keep polling
