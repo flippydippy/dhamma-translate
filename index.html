@@ -136,6 +136,8 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .dots::after{content:""; animation:dots 1.4s steps(4,end) infinite}
   @keyframes dots{0%{content:""}25%{content:"·"}50%{content:"· ·"}75%{content:"· · ·"}}
+  .pbar{height:10px; background:var(--bg-warm); border:1px solid var(--line); border-radius:999px; overflow:hidden}
+  .pbar-fill{height:100%; width:0%; background:var(--gold); border-radius:999px; transition:width .5s ease}
 
   /* ---- notices ---- */
   .notice{margin-top:18px; padding:14px 16px; border-radius:10px; font-size:14.5px; display:none}
@@ -298,6 +300,10 @@
       <div class="field">
         <label>Your request <span id="spinner" class="spinner" style="display:none"></span></label>
         <p id="statusText" style="color:var(--grey)">Checking status…</p>
+        <div id="progressBox" style="display:none; margin-top:12px">
+          <div class="pbar" id="pbar" style="display:none"><div class="pbar-fill" id="pbarFill"></div></div>
+          <p id="progDetail" style="margin-top:8px; color:var(--grey); font-size:13px"></p>
+        </div>
       </div>
       <a id="downloadBtn" class="submit" style="display:none; text-decoration:none" download>Download result</a>
       <a id="subBtn" class="submit secondary" style="display:none; text-decoration:none; margin-top:10px" download>Download subtitles (.srt)</a>
@@ -529,6 +535,60 @@
   const startPoll = () => { if (!pollTimer) pollTimer = setInterval(check, 8000); };
   const stopPoll = () => { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } };
 
+  // ---- live progress (phase, section X of N, elapsed, ETA) ----
+  let progState = null, progTimer = null;
+  const stopProg = () => { if (progTimer) { clearInterval(progTimer); progTimer = null; } $("progressBox").style.display = "none"; };
+  const startProg = () => { if (!progTimer) progTimer = setInterval(tickProgress, 1000); };
+
+  function fmtDur(secs) {
+    secs = Math.max(0, Math.round(secs));
+    const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60);
+    if (h) return m ? h + "h " + m + "m" : h + "h";
+    if (m) return m + " min";
+    return secs + " sec";
+  }
+
+  function renderProgress(d) {
+    const startIso = d.started_at || d.submitted_at;
+    const startMs = startIso ? Date.parse(startIso) : null;
+    const p = d.progress || null;
+    const isPdf = d.kind !== "audio";
+    let label, showBar = false, pct = 0;
+    const st = d.status;
+    if (st === "uploading") label = "Receiving your file…";
+    else if (st === "queued") label = "In the queue — starting shortly";
+    else if (p && p.phase === "extracting") label = "Reading the document…";
+    else if (p && p.phase === "transcribing") label = "Transcribing the audio…";
+    else if (p && p.phase === "quality-check") { label = "Final quality check…"; showBar = true; pct = 100; }
+    else if (p && p.phase === "translating" && p.total) {
+      label = "Translating — section " + p.done + " of " + p.total;
+      showBar = true; pct = Math.min(100, Math.round(100 * p.done / p.total));
+    } else label = isPdf ? "Working on your translation" : "Working on your transcription";
+
+    $("statusText").className = showBar ? "" : "dots";
+    $("statusText").textContent = label;
+    $("progressBox").style.display = "block";
+    $("pbar").style.display = showBar ? "block" : "none";
+    if (showBar) $("pbarFill").style.width = pct + "%";
+    progState = { startMs, done: (p && p.done) || 0, total: (p && p.total) || 0, phase: p && p.phase };
+    tickProgress();
+    startProg();
+  }
+
+  function tickProgress() {
+    if (!progState) return;
+    const parts = [];
+    if (progState.startMs) {
+      const elapsed = (Date.now() - progState.startMs) / 1000;
+      parts.push("Started " + fmtDur(elapsed) + " ago");
+      if (progState.phase === "translating" && progState.done > 0 && progState.total) {
+        const per = elapsed / progState.done;
+        parts.push("about " + fmtDur(per * (progState.total - progState.done)) + " left");
+      }
+    }
+    $("progDetail").textContent = parts.join("   ·   ");
+  }
+
   async function check() {
     $("spinner").style.display = "inline-block";
     try {
@@ -538,6 +598,7 @@
       const noun = d.kind === "audio" ? "transcript" : "translation";
       lastResultName = d.result_name || (d.kind === "audio" ? "transcript.txt" : "result.md");
       if (d.ready) {
+        stopProg();
         $("spinner").style.display = "none";
         $("statusText").className = "";
         $("statusText").textContent = "Your " + noun + " is ready to download.";
@@ -581,22 +642,24 @@
         }
       } else if (d.status === "error") {
         stopPoll();
+        stopProg();
         $("spinner").style.display = "none";
         $("statusText").className = "";
         $("statusText").textContent = "This request could not be processed.";
         $("refreshBtn").style.display = "none";
         sNotice("err", "Processing failed — please re-upload, or contact the administrator.");
       } else {
-        // queued / uploading / processing — keep the user informed and auto-refresh
-        $("statusText").className = "dots";
-        $("statusText").textContent = "Working on your " + noun;
-        sNotice("info", "This usually takes a few minutes. The page refreshes itself — " +
-          "or save this link and come back any time.");
+        // queued / uploading / processing — show real progress and auto-refresh
+        renderProgress(d);
+        sNotice("info", d.kind === "audio"
+          ? "Transcription usually takes a few minutes. This page updates on its own — or save the link and come back any time."
+          : "A full book is translated section by section — each one drafted, edited, and quality-checked — so a book can take a few hours. You can close this page and return to this link any time; it keeps working.");
         startPoll();
       }
     } catch (e) {
       if (e instanceof AuthError) return;
       stopPoll();
+      stopProg();
       $("spinner").style.display = "none";
       $("statusText").className = "";
       $("statusText").textContent = "";
