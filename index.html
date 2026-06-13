@@ -174,6 +174,9 @@
     </div>
     <a id="downloadBtn" class="submit" style="display:none; text-decoration:none" download>Download result</a>
     <a id="subBtn" class="submit" style="display:none; text-decoration:none; margin-top:10px; background:#fff; color:var(--accent); border:1px solid var(--line)" download>Download subtitles (.srt)</a>
+    <div id="subStatus" style="display:none; margin-top:12px; color:var(--muted); font-size:13.5px">
+      <span class="spinner" id="subSpinner" style="margin-left:0; margin-right:8px"></span><span id="subStatusText"></span>
+    </div>
     <button type="button" class="submit" id="refreshBtn" style="margin-top:10px; background:#fff; color:var(--accent); border:1px solid var(--line)">Check again</button>
     <div class="notice" id="statusNotice"></div>
   </div>
@@ -378,17 +381,39 @@
       const noun = d.kind === "audio" ? "transcript" : "translation";
       lastResultName = d.result_name || (d.kind === "audio" ? "transcript.txt" : "result.md");
       if (d.ready) {
-        stopPoll();
         $("spinner").style.display = "none";
         $("statusText").className = "";
-        $("statusText").textContent = "Your " + noun + " is ready.";
+        $("statusText").textContent = "Your " + noun + " is ready to download.";
         $("downloadBtn").style.display = "block";
         $("refreshBtn").style.display = "none";
         if (d.has_subtitles) {
+          stopPoll();
           lastSubName = d.subtitle_name || "subtitles.srt";
           $("subBtn").style.display = "block";
+          $("subStatus").style.display = "none";
+          sNotice("ok", "Ready.");
+        } else if (d.subtitles_status === "generating") {
+          // transcript is downloadable now; subtitles fill in — keep polling
+          const mins = d.subtitle_eta_minutes || "15–20";
+          $("subBtn").style.display = "none";
+          $("subStatus").style.display = "block";
+          $("subStatusText").textContent =
+            "Subtitles (.srt) are being prepared — usually about " + mins +
+            " minutes for a long recording. You can download the transcript now; " +
+            "this page updates on its own.";
+          sNotice("ok", "Transcript ready. Subtitles still preparing.");
+          startPoll();
+        } else if (d.subtitles_status === "error") {
+          stopPoll();
+          $("subStatus").style.display = "block";
+          $("subSpinner").style.display = "none";
+          $("subStatusText").textContent =
+            "Subtitles couldn't be generated for this file, but your transcript is ready.";
+          sNotice("ok", "Ready.");
+        } else {
+          stopPoll();
+          sNotice("ok", "Ready.");
         }
-        sNotice("ok", "Ready.");
       } else if (d.status === "error") {
         stopPoll();
         $("spinner").style.display = "none";
