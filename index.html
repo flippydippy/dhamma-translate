@@ -5,197 +5,296 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dhamma Translate — translation &amp; transcription of Dhamma materials</title>
 <meta name="description" content="Upload a PDF for translation or audio for transcription of S.N. Goenka Vipassana-tradition Dhamma materials. English and Persian.">
+<meta name="theme-color" content="#1E3461">
+<link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Sans:ital,wght@0,300;0,400;0,500;0,700&display=swap" rel="stylesheet">
 <style>
+  /* ---- Design Standards v0.6 (Vipassana Meditation as Taught by S.N. Goenka) ---- */
   :root{
-    --bg:#faf7f2; --ink:#2b2520; --muted:#7a6f63; --line:#e7dfd3;
-    --accent:#8a3324; --accent-soft:#f3e6e1; --gold:#b98a2f;
-    --card:#fffdf9; --radius:14px;
+    /* primary palette */
+    --blue:#1E3461;        /* dark blue — buttons, headers, accents */
+    --gold:#B78730;        /* light gold — accents, graphical elements */
+    --gold-dark:#9C6B14;   /* dark gold — header text on white */
+    --grey:#4F4D47;        /* grey — secondary text */
+    --ink:#212121;         /* off-black — body text */
+    /* surfaces */
+    --bg:#FBF9F5;          /* gold 5% tint — page */
+    --bg-warm:#F1E7D6;     /* gold 20% tint — soft panels */
+    --card:#ffffff;
+    --line:#e7ddca;        /* warm hairline border */
+    /* notices */
+    --ok-bg:#eef1f6; --ok-ink:#1E3461; --ok-line:#cfd8e6;
+    --info-bg:#F1E7D6; --info-ink:#6a5320; --info-line:#e4d4ae;
+    --err-bg:#f7e9e5; --err-ink:#8a2b1a; --err-line:#e7c9bf;
+    /* aliases kept so inline styles in the markup map to the brand palette */
+    --accent:var(--blue); --muted:var(--grey);
+    --radius:12px;
   }
   *{box-sizing:border-box; margin:0; padding:0}
+  html{-webkit-text-size-adjust:100%}
   body{
     background:var(--bg); color:var(--ink);
-    font-family:'Inter',system-ui,sans-serif;
-    line-height:1.6; min-height:100vh;
-    display:flex; flex-direction:column; align-items:center;
+    font-family:'Noto Sans',system-ui,-apple-system,sans-serif;
+    font-weight:400; line-height:1.65; min-height:100vh;
+    display:flex; flex-direction:column;
   }
-  header{
-    width:100%; max-width:880px; padding:56px 24px 8px; text-align:center;
+
+  /* ---- top accent + header nav ---- */
+  .topbar{height:4px; background:var(--blue); width:100%}
+  .nav{
+    background:#fff; border-bottom:1px solid var(--gold);
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px; padding:16px 24px;
   }
-  .mark{
-    font-family:'Source Serif 4',serif; font-size:15px; letter-spacing:.22em;
-    text-transform:uppercase; color:var(--gold); margin-bottom:18px;
+  .nav .brand{display:inline-flex; align-items:center; line-height:0}
+  .nav .brand img{height:46px; width:auto}
+  .logo-dark{display:none}
+  .signout{
+    background:none; border:none; color:var(--grey); font:inherit;
+    font-size:13.5px; text-decoration:underline; cursor:pointer;
+    padding:6px 4px; white-space:nowrap;
   }
+  .signout:hover{color:var(--blue)}
+
+  /* ---- layout ---- */
+  main{
+    width:100%; max-width:760px; margin:0 auto; flex:1 0 auto;
+    padding:8px 24px 24px;
+  }
+  .hero{text-align:center; padding:44px 8px 30px}
   h1{
-    font-family:'Source Serif 4',serif; font-weight:600;
-    font-size:clamp(30px,5vw,44px); line-height:1.15; margin-bottom:14px;
+    font-family:'Amiri',Georgia,serif; font-weight:700; color:var(--blue);
+    font-size:clamp(30px,5.2vw,46px); line-height:1.18; letter-spacing:.2px;
+    margin-bottom:14px;
   }
-  .lede{
-    color:var(--muted); max-width:560px; margin:0 auto 8px; font-size:16.5px;
-  }
-  main{width:100%; max-width:880px; padding:32px 24px 24px}
-  .tabs{
-    display:flex; gap:10px; justify-content:center; margin-bottom:26px;
-  }
+  .lede{color:var(--grey); max-width:560px; margin:0 auto; font-size:17px}
+
+  /* ---- tabs ---- */
+  .tabs{display:flex; gap:10px; justify-content:center; margin-bottom:26px; flex-wrap:wrap}
   .tab{
-    border:1px solid var(--line); background:var(--card); color:var(--ink);
-    padding:10px 22px; border-radius:999px; font-size:15px; font-weight:500;
-    cursor:pointer; transition:all .15s ease;
+    border:1px solid var(--line); background:#fff; color:var(--grey);
+    padding:10px 22px; border-radius:999px; font:inherit; font-size:15px;
+    font-weight:500; cursor:pointer; transition:all .15s ease;
   }
+  .tab:hover{border-color:var(--gold)}
   .tab[aria-selected="true"]{
-    background:var(--accent); border-color:var(--accent); color:#fff;
+    background:var(--blue); border-color:var(--blue); color:#fff;
   }
+
+  /* ---- cards ---- */
   .card{
     background:var(--card); border:1px solid var(--line);
     border-radius:var(--radius); padding:34px; max-width:560px; margin:0 auto;
-    box-shadow:0 1px 2px rgba(43,37,32,.04), 0 8px 28px rgba(43,37,32,.05);
+    box-shadow:0 1px 2px rgba(30,52,97,.04), 0 10px 30px rgba(30,52,97,.06);
   }
+  .card-title{
+    font-family:'Amiri',Georgia,serif; font-weight:700; color:var(--blue);
+    font-size:24px; line-height:1.25; margin-bottom:22px; text-align:center;
+  }
+
+  /* ---- form ---- */
   .field{margin-bottom:22px}
-  label{display:block; font-weight:600; font-size:14px; margin-bottom:8px}
-  label .hint{font-weight:400; color:var(--muted)}
+  label{display:block; font-weight:600; font-size:14px; margin-bottom:8px; color:var(--ink)}
+  label .hint{font-weight:400; color:var(--grey)}
   .drop{
     border:1.5px dashed var(--line); border-radius:10px; padding:30px 18px;
-    text-align:center; color:var(--muted); cursor:pointer; font-size:15px;
+    text-align:center; color:var(--grey); cursor:pointer; font-size:15px;
     transition:border-color .15s, background .15s;
   }
-  .drop:hover,.drop.drag{border-color:var(--accent); background:var(--accent-soft)}
-  .drop strong{color:var(--accent)}
-  .drop .picked{color:var(--ink); font-weight:500; word-break:break-all}
+  .drop:hover,.drop.drag{border-color:var(--gold); background:var(--bg-warm)}
+  .drop strong{color:var(--gold-dark)}
+  .drop .picked{color:var(--ink); font-weight:600; word-break:break-all}
   input[type=file]{display:none}
-  select#lang{
+  select#lang, input[type=email], input[type=text], input[type=password]{
     width:100%; padding:12px 14px; border:1px solid var(--line);
-    border-radius:10px; font:inherit; font-size:15px; background:#fff;
-    appearance:auto; cursor:pointer;
+    border-radius:10px; font:inherit; font-size:15px; background:#fff; color:var(--ink);
   }
-  input[type=email], input[type=text], input[type=password]{
-    width:100%; padding:12px 14px; border:1px solid var(--line);
-    border-radius:10px; font:inherit; font-size:15px; background:#fff;
+  select#lang{appearance:auto; cursor:pointer}
+  input:focus, select#lang:focus{
+    outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(30,52,97,.12);
   }
-  input[type=email]:focus, input[type=text]:focus, input[type=password]:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
-  /* applies to BOTH <button class=submit> and <a class=submit> (the download link) */
+
+  /* ---- buttons (applies to <button class=submit> and <a class=submit>) ---- */
   .submit{
-    display:block; width:100%; padding:14px; border:none; border-radius:10px;
-    background:var(--accent); color:#fff; font:inherit; font-size:16px;
-    font-weight:600; cursor:pointer; text-align:center;
+    display:block; width:100%; padding:14px; border:1px solid var(--blue);
+    border-radius:10px; background:var(--blue); color:#fff; font:inherit;
+    font-size:16px; font-weight:600; cursor:pointer; text-align:center;
     transition:filter .12s, transform .12s, box-shadow .12s;
   }
-  .submit:hover{filter:brightness(1.06); transform:translateY(-2px); box-shadow:0 6px 18px rgba(138,51,36,.30)}
+  .submit:hover{filter:brightness(1.12); transform:translateY(-2px); box-shadow:0 6px 18px rgba(30,52,97,.28)}
   .submit:active{transform:translateY(0); box-shadow:none}
-  button.submit:disabled{background:#c9beb2; cursor:not-allowed; transform:none; box-shadow:none}
+  button.submit:disabled{background:#b9c0cf; border-color:#b9c0cf; cursor:not-allowed; transform:none; box-shadow:none; filter:none}
+  /* secondary (download subtitles, check-again): white with brand outline */
+  .submit.secondary{background:#fff; color:var(--blue); border:1px solid var(--line)}
+  .submit.secondary:hover{border-color:var(--blue); filter:none}
+
   .spinner{display:inline-block; width:15px; height:15px; border:2px solid var(--line);
-    border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite;
+    border-top-color:var(--gold); border-radius:50%; animation:spin .8s linear infinite;
     vertical-align:middle; margin-left:8px}
   @keyframes spin{to{transform:rotate(360deg)}}
   .dots::after{content:""; animation:dots 1.4s steps(4,end) infinite}
   @keyframes dots{0%{content:""}25%{content:"·"}50%{content:"· ·"}75%{content:"· · ·"}}
-  .notice{
-    margin-top:18px; padding:14px 16px; border-radius:10px; font-size:14.5px;
-    display:none;
-  }
-  .notice.info{display:block; background:#f4ecdc; color:#6a5320; border:1px solid #e4d4ae}
-  .notice.ok{display:block; background:#e8f0e4; color:#2f5226; border:1px solid #c7dbbd}
-  .notice.err{display:block; background:var(--accent-soft); color:var(--accent); border:1px solid #e0c3ba}
-  .how{
-    max-width:560px; margin:40px auto 0; color:var(--muted); font-size:14.5px;
-  }
-  .how h2{
-    font-family:'Source Serif 4',serif; font-size:18px; color:var(--ink);
-    margin-bottom:10px; font-weight:600;
-  }
+
+  /* ---- notices ---- */
+  .notice{margin-top:18px; padding:14px 16px; border-radius:10px; font-size:14.5px; display:none}
+  .notice.info{display:block; background:var(--info-bg); color:var(--info-ink); border:1px solid var(--info-line)}
+  .notice.ok{display:block; background:var(--ok-bg); color:var(--ok-ink); border:1px solid var(--ok-line)}
+  .notice.err{display:block; background:var(--err-bg); color:var(--err-ink); border:1px solid var(--err-line)}
+  .notice a{color:inherit}
+
+  /* ---- how it works ---- */
+  .how{max-width:560px; margin:40px auto 0; color:var(--grey); font-size:14.5px}
+  .how h2{font-family:'Amiri',Georgia,serif; font-size:20px; color:var(--gold-dark); margin-bottom:12px; font-weight:700}
   .how ol{padding-left:20px}
-  .how li{margin-bottom:6px}
-  footer{
-    width:100%; max-width:880px; padding:48px 24px 36px; text-align:center;
-    color:var(--muted); font-size:13.5px;
+  .how li{margin-bottom:8px}
+
+  /* ---- footer ---- */
+  .site-footer{
+    flex-shrink:0; background:var(--blue); color:#E8E8E8; text-align:center;
+    padding:26px 24px 30px; font-size:13.5px; line-height:1.7;
   }
-  footer .pali{font-style:italic}
-  @media (max-width:560px){ .card{padding:24px 18px} }
+  .site-footer .pali{font-family:'Amiri',Georgia,serif; font-style:italic; font-size:17px; color:#fff; display:block; margin-bottom:4px}
+  .site-footer .muted{color:#bcc3d4}
+
+  @media (max-width:560px){
+    .nav{padding:14px 16px}
+    .nav .brand img{height:38px}
+    main{padding:4px 16px 20px}
+    .hero{padding:30px 4px 22px}
+    .card{padding:24px 18px}
+  }
+
+  /* ---- dark mode (Design Standards dark palette) ---- */
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ink:#E8E8E8; --grey:#BFBFBF; --bg:#1A1A1A; --bg-warm:#262320;
+      --card:#222222; --line:#3a3733; --accent:var(--gold); --muted:var(--grey);
+      --ok-bg:#1f2740; --ok-ink:#cdd7ec; --ok-line:#34406a;
+      --info-bg:#2c2417; --info-ink:#e6cf9a; --info-line:#4a3c1f;
+      --err-bg:#33211c; --err-ink:#e6a892; --err-line:#5a3429;
+    }
+    body{background:var(--bg)}
+    .topbar{background:var(--gold)}
+    .nav{background:#161616; border-bottom-color:var(--gold)}
+    .logo-light{display:none}
+    .logo-dark{display:inline-block}
+    h1,.card-title{color:#E8E8E8}
+    .how h2{color:var(--gold)}
+    .tab{background:#222; color:var(--grey)}
+    .tab[aria-selected="true"]{background:var(--gold); border-color:var(--gold); color:#1A1A1A}
+    select#lang, input[type=email], input[type=text], input[type=password]{background:#1a1a1a; color:var(--ink)}
+    input:focus, select#lang:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(183,135,48,.25)}
+    /* dark-mode buttons use gold (per dark-mode graphical palette) for contrast on black */
+    .submit{background:var(--gold); border-color:var(--gold); color:#1A1A1A}
+    .submit:hover{box-shadow:0 6px 18px rgba(183,135,48,.30)}
+    button.submit:disabled{background:#4a4742; border-color:#4a4742; color:#9a958c}
+    .submit.secondary{background:transparent; color:var(--gold); border:1px solid var(--line)}
+    .submit.secondary:hover{border-color:var(--gold)}
+    .drop strong{color:var(--gold)}
+    .site-footer{background:#161616; border-top:1px solid var(--gold)}
+  }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="mark">Dhamma Translate</div>
-  <h1>Dhamma teachings, carried across languages</h1>
-  <p class="lede">
-    Upload a PDF to translate, or an audio discourse to transcribe — in the
-    tradition of S.N. Goenka.
-  </p>
-  <button type="button" id="logoutBtn" style="display:none; margin-top:14px; background:none; border:none; color:var(--muted); font:inherit; font-size:13px; text-decoration:underline; cursor:pointer">Sign out</button>
+<div class="topbar"></div>
+<header class="nav">
+  <a class="brand" href="./" aria-label="Vipassana Meditation as Taught by S.N. Goenka">
+    <img class="logo-light" src="assets/logo.svg" alt="Vipassana Meditation as Taught by S.N. Goenka, in the Tradition of Sayagyi U Ba Khin">
+    <img class="logo-dark" src="assets/logo-reverse.svg" alt="Vipassana Meditation as Taught by S.N. Goenka, in the Tradition of Sayagyi U Ba Khin">
+  </a>
+  <button type="button" id="logoutBtn" class="signout" style="display:none">Sign out</button>
 </header>
 
-<div class="card" id="loginCard" style="max-width:380px; display:none">
-  <div class="field">
-    <label for="username">Username</label>
-    <input type="text" id="username" autocomplete="username" autocapitalize="off">
-  </div>
-  <div class="field">
-    <label for="password">Password</label>
-    <input type="password" id="password" autocomplete="current-password">
-  </div>
-  <button class="submit" type="button" id="loginBtn">Sign in</button>
-  <div class="notice" id="loginNotice"></div>
-  <p style="margin-top:14px; color:var(--muted); font-size:13px; text-align:center">
-    Accounts are issued by the administrator — there is no sign-up.</p>
-</div>
+<main>
 
-<main id="app" style="display:none">
-  <div class="tabs" role="tablist">
-    <button class="tab" role="tab" aria-selected="true" data-kind="pdf">Translate a PDF</button>
-    <button class="tab" role="tab" aria-selected="false" data-kind="audio">Transcribe audio</button>
-  </div>
-
-  <form class="card" id="form">
-    <div class="field">
-      <label id="fileLabel">PDF file <span class="hint">(up to 50 MB)</span></label>
-      <div class="drop" id="drop" tabindex="0" role="button">
-        <span id="dropText">Drop the file here or <strong>browse</strong></span>
-      </div>
-      <input type="file" id="file" accept=".pdf">
-    </div>
-
-    <div class="field">
-      <label>Output language</label>
-      <select id="lang">
-        <option value="en" selected>English</option>
-        <option value="fa">Persian</option>
-      </select>
-    </div>
-
-    <button class="submit" type="submit" id="submitBtn">Submit for translation</button>
-    <div class="notice" id="notice"></div>
-  </form>
-
-  <div class="card" id="statusCard" style="display:none">
-    <div class="field">
-      <label>Your request <span id="spinner" class="spinner" style="display:none"></span></label>
-      <p id="statusText" style="color:var(--muted)">Checking status…</p>
-    </div>
-    <a id="downloadBtn" class="submit" style="display:none; text-decoration:none" download>Download result</a>
-    <a id="subBtn" class="submit" style="display:none; text-decoration:none; margin-top:10px; background:#fff; color:var(--accent); border:1px solid var(--line)" download>Download subtitles (.srt)</a>
-    <div id="subStatus" style="display:none; margin-top:12px; color:var(--muted); font-size:13.5px">
-      <span class="spinner" id="subSpinner" style="margin-left:0; margin-right:8px"></span><span id="subStatusText"></span>
-    </div>
-    <p id="subNote" style="display:none; margin-top:12px; color:var(--muted); font-size:12.5px; line-height:1.5"></p>
-    <button type="button" class="submit" id="refreshBtn" style="margin-top:10px; background:#fff; color:var(--accent); border:1px solid var(--line)">Check again</button>
-    <div class="notice" id="statusNotice"></div>
-  </div>
-
-  <section class="how">
-    <h2>How it works</h2>
-    <ol>
-      <li>Upload your PDF or audio file and choose the output language.</li>
-      <li>It is processed through a pipeline built for Goenka-tradition
-          materials — terminology, Pāli conventions, and voice are checked
-          against a curated glossary and language profile.</li>
-      <li>Save the private link you receive — processing is automatic and your
-          result is usually ready to download within a few minutes.</li>
-    </ol>
+  <section class="hero">
+    <h1>Dhamma teachings, carried across languages</h1>
+    <p class="lede">
+      Upload a PDF to translate, or an audio discourse to transcribe — in the
+      tradition of S.N. Goenka.
+    </p>
   </section>
+
+  <div class="card" id="loginCard" style="max-width:400px; display:none">
+    <h2 class="card-title">Log in to Dhamma Translate</h2>
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" autocapitalize="off">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password">
+    </div>
+    <button class="submit" type="button" id="loginBtn">Sign in</button>
+    <div class="notice" id="loginNotice"></div>
+    <p style="margin-top:16px; color:var(--grey); font-size:13px; text-align:center">
+      Accounts are issued by the administrator — there is no sign-up.</p>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-kind="pdf">Translate a PDF</button>
+      <button class="tab" role="tab" aria-selected="false" data-kind="audio">Transcribe audio</button>
+    </div>
+
+    <form class="card" id="form">
+      <div class="field">
+        <label id="fileLabel">PDF file <span class="hint">(up to 50 MB)</span></label>
+        <div class="drop" id="drop" tabindex="0" role="button">
+          <span id="dropText">Drop the file here or <strong>browse</strong></span>
+        </div>
+        <input type="file" id="file" accept=".pdf">
+      </div>
+
+      <div class="field">
+        <label for="lang">Output language</label>
+        <select id="lang">
+          <option value="en" selected>English</option>
+          <option value="fa">Persian</option>
+        </select>
+      </div>
+
+      <button class="submit" type="submit" id="submitBtn">Submit for translation</button>
+      <div class="notice" id="notice"></div>
+    </form>
+
+    <div class="card" id="statusCard" style="display:none">
+      <div class="field">
+        <label>Your request <span id="spinner" class="spinner" style="display:none"></span></label>
+        <p id="statusText" style="color:var(--grey)">Checking status…</p>
+      </div>
+      <a id="downloadBtn" class="submit" style="display:none; text-decoration:none" download>Download result</a>
+      <a id="subBtn" class="submit secondary" style="display:none; text-decoration:none; margin-top:10px" download>Download subtitles (.srt)</a>
+      <div id="subStatus" style="display:none; margin-top:12px; color:var(--grey); font-size:13.5px">
+        <span class="spinner" id="subSpinner" style="margin-left:0; margin-right:8px"></span><span id="subStatusText"></span>
+      </div>
+      <p id="subNote" style="display:none; margin-top:12px; color:var(--grey); font-size:12.5px; line-height:1.5"></p>
+      <button type="button" class="submit secondary" id="refreshBtn" style="margin-top:10px">Check again</button>
+      <div class="notice" id="statusNotice"></div>
+    </div>
+
+    <section class="how">
+      <h2>How it works</h2>
+      <ol>
+        <li>Upload your PDF or audio file and choose the output language.</li>
+        <li>It is processed through a pipeline built for Goenka-tradition
+            materials — terminology, Pāli conventions, and voice are checked
+            against a curated glossary and language profile.</li>
+        <li>Save the private link you receive — processing is automatic and your
+            result is usually ready to download within a few minutes.</li>
+      </ol>
+    </section>
+  </div>
+
 </main>
 
-<footer></footer>
+<footer class="site-footer">
+  <span class="pali">Bhavatu sabba maṅgalaṃ</span>
+  <span class="muted">Dhamma Translate · in the tradition of S.N. Goenka</span>
+</footer>
 
 <script>
   // Set to the intake service URL once deployed (Cloud Run). While empty, the
