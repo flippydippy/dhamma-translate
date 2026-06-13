@@ -172,8 +172,9 @@
       <label>Your request <span id="spinner" class="spinner" style="display:none"></span></label>
       <p id="statusText" style="color:var(--muted)">Checking status…</p>
     </div>
-    <a id="downloadBtn" class="submit" style="display:none; text-align:center; text-decoration:none" download>Download result</a>
-    <button type="button" class="submit" id="refreshBtn" style="background:#fff; color:var(--accent); border:1px solid var(--line)">Check again</button>
+    <a id="downloadBtn" class="submit" style="display:none; text-decoration:none" download>Download result</a>
+    <a id="subBtn" class="submit" style="display:none; text-decoration:none; margin-top:10px; background:#fff; color:var(--accent); border:1px solid var(--line)" download>Download subtitles (.srt)</a>
+    <button type="button" class="submit" id="refreshBtn" style="margin-top:10px; background:#fff; color:var(--accent); border:1px solid var(--line)">Check again</button>
     <div class="notice" id="statusNotice"></div>
   </div>
 
@@ -362,6 +363,7 @@
   const jobId = new URLSearchParams(location.search).get("job");
   const sNotice = (cls, msg) => { const n = $("statusNotice"); n.className = "notice " + cls; n.textContent = msg; };
   let lastResultName = "result";
+  let lastSubName = "subtitles.srt";
 
   let pollTimer = null;
   const startPoll = () => { if (!pollTimer) pollTimer = setInterval(check, 8000); };
@@ -382,6 +384,10 @@
         $("statusText").textContent = "Your " + noun + " is ready.";
         $("downloadBtn").style.display = "block";
         $("refreshBtn").style.display = "none";
+        if (d.has_subtitles) {
+          lastSubName = d.subtitle_name || "subtitles.srt";
+          $("subBtn").style.display = "block";
+        }
         sNotice("ok", "Ready.");
       } else if (d.status === "error") {
         stopPoll();
@@ -409,21 +415,23 @@
   }
 
   // download via authed fetch -> blob (a plain link can't carry the token)
-  $("downloadBtn").addEventListener("click", async () => {
+  async function grab(query, name) {
     try {
-      const r = await authedFetch("/api/download/" + encodeURIComponent(jobId));
+      const r = await authedFetch("/api/download/" + encodeURIComponent(jobId) + query);
       if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || r.statusText); }
       const blob = await r.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = lastResultName;
+      a.download = name;
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(a.href);
     } catch (e) {
       if (e instanceof AuthError) return;
       sNotice("err", "Download failed: " + e.message);
     }
-  });
+  }
+  $("downloadBtn").addEventListener("click", () => grab("", lastResultName));
+  $("subBtn").addEventListener("click", () => grab("?v=subtitles", lastSubName));
   $("refreshBtn").addEventListener("click", check);
 
   // ---- on load: gate the whole site behind login ----
