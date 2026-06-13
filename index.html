@@ -73,13 +73,16 @@
     border-radius:10px; font:inherit; font-size:15px; background:#fff;
   }
   input[type=email]:focus, input[type=text]:focus, input[type=password]:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
-  button.submit{
-    width:100%; padding:14px; border:none; border-radius:10px;
+  /* applies to BOTH <button class=submit> and <a class=submit> (the download link) */
+  .submit{
+    display:block; width:100%; padding:14px; border:none; border-radius:10px;
     background:var(--accent); color:#fff; font:inherit; font-size:16px;
-    font-weight:600; cursor:pointer; transition:filter .15s;
+    font-weight:600; cursor:pointer; text-align:center;
+    transition:filter .12s, transform .12s, box-shadow .12s;
   }
-  button.submit:hover{filter:brightness(1.08)}
-  button.submit:disabled{background:#c9beb2; cursor:not-allowed}
+  .submit:hover{filter:brightness(1.06); transform:translateY(-2px); box-shadow:0 6px 18px rgba(138,51,36,.30)}
+  .submit:active{transform:translateY(0); box-shadow:none}
+  button.submit:disabled{background:#c9beb2; cursor:not-allowed; transform:none; box-shadow:none}
   .spinner{display:inline-block; width:15px; height:15px; border:2px solid var(--line);
     border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite;
     vertical-align:middle; margin-left:8px}
@@ -187,9 +190,7 @@
   </section>
 </main>
 
-<footer>
-  <div class="pali">Bhavatu sabba maṅgalaṃ</div>
-  </footer>
+<footer></footer>
 
 <script>
   // Set to the intake service URL once deployed (Cloud Run). While empty, the
@@ -381,7 +382,7 @@
         $("statusText").textContent = "Your " + noun + " is ready.";
         $("downloadBtn").style.display = "block";
         $("refreshBtn").style.display = "none";
-        sNotice("ok", "Ready. Bhavatu sabba maṅgalaṃ.");
+        sNotice("ok", "Ready.");
       } else if (d.status === "error") {
         stopPoll();
         $("spinner").style.display = "none";
