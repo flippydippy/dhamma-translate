@@ -150,6 +150,36 @@
   .how ol{padding-left:20px}
   .how li{margin-bottom:8px}
 
+  /* ---- admin dashboard ---- */
+  main.admin-wide{max-width:1040px}
+  #adminView{padding-top:8px}
+  .dash-title{font-family:'Amiri',Georgia,serif; font-weight:700; color:var(--blue); font-size:26px; margin-bottom:4px}
+  .dash-sub{color:var(--grey); font-size:14px; margin-bottom:18px}
+  .dash-sub #adminUpdated{color:var(--gold-dark)}
+  .metrics{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px}
+  .metric{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .metric-l{color:var(--grey); font-size:13px; margin-bottom:4px}
+  .metric-v{font-family:'Amiri',Georgia,serif; font-weight:700; color:var(--blue); font-size:28px; line-height:1}
+  .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:#fff}
+  table.dash{width:100%; border-collapse:collapse; font-size:13.5px; min-width:680px}
+  table.dash th{background:var(--blue); color:#fff; font-weight:600; text-align:left; padding:11px 14px; white-space:nowrap; font-size:12.5px}
+  table.dash th:first-child{border-top-left-radius:11px}
+  table.dash th:last-child{border-top-right-radius:11px}
+  table.dash td{padding:11px 14px; border-top:1px solid var(--line); color:var(--ink); vertical-align:top}
+  table.dash tbody tr:nth-child(even){background:var(--bg)}
+  table.dash td.file{max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  table.dash td.empty{text-align:center; color:var(--grey); padding:26px}
+  .badge{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; white-space:nowrap}
+  .badge.b-ok{background:var(--ok-bg); color:var(--ok-ink); border:1px solid var(--ok-line)}
+  .badge.b-info{background:var(--info-bg); color:var(--info-ink); border:1px solid var(--info-line)}
+  .badge.b-err{background:var(--err-bg); color:var(--err-ink); border:1px solid var(--err-line)}
+  .badge.b-grey{background:#eee; color:var(--grey); border:1px solid var(--line)}
+  .substatus{color:var(--grey); font-size:11.5px; margin-top:4px}
+  .substatus.err{color:var(--err-ink)}
+  .linkbtn{background:none; border:none; color:var(--blue); font:inherit; font-size:13px; font-weight:600; text-decoration:underline; cursor:pointer; padding:0; margin-right:10px}
+  .linkbtn.srt{color:var(--gold-dark); font-weight:500}
+  .linkbtn:hover{filter:brightness(1.2)}
+
   /* ---- footer ---- */
   .site-footer{
     flex-shrink:0; background:var(--blue); color:#E8E8E8; text-align:center;
@@ -205,7 +235,10 @@
     <img class="logo-light" src="assets/logo.svg" alt="Vipassana Meditation as Taught by S.N. Goenka, in the Tradition of Sayagyi U Ba Khin">
     <img class="logo-dark" src="assets/logo-reverse.svg" alt="Vipassana Meditation as Taught by S.N. Goenka, in the Tradition of Sayagyi U Ba Khin">
   </a>
-  <button type="button" id="logoutBtn" class="signout" style="display:none">Sign out</button>
+  <div style="display:flex; align-items:center; gap:14px">
+    <button type="button" id="adminBtn" class="signout" style="display:none">Dashboard</button>
+    <button type="button" id="logoutBtn" class="signout" style="display:none">Sign out</button>
+  </div>
 </header>
 
 <main>
@@ -276,6 +309,23 @@
       <div class="notice" id="statusNotice"></div>
     </div>
 
+    <section id="adminView" style="display:none">
+      <h2 class="dash-title">Activity dashboard</h2>
+      <p class="dash-sub">Every translation and transcription request, newest first. <span id="adminUpdated"></span></p>
+      <div class="metrics" id="adminMetrics"></div>
+      <div class="notice" id="adminNotice"></div>
+      <div class="table-wrap">
+        <table class="dash">
+          <thead><tr>
+            <th>When</th><th>User</th><th>Task</th><th>Language</th>
+            <th>File</th><th>Status</th><th>Result</th>
+          </tr></thead>
+          <tbody id="adminRows"></tbody>
+        </table>
+      </div>
+      <button type="button" class="submit secondary" id="adminRefresh" style="max-width:200px; margin-top:18px">Refresh now</button>
+    </section>
+
     <section class="how">
       <h2>How it works</h2>
       <ol>
@@ -340,11 +390,18 @@
       $("statusCard").style.display = "block";
       check();
     }
+    refreshMe();                               // reveals the Dashboard link if admin
   }
   function showLogin(msg) {
     $("app").style.display = "none";
     $("statusCard").style.display = "none";
     $("logoutBtn").style.display = "none";
+    // tear down any admin state so it can't leak across sign-out
+    isAdmin = false; inAdmin = false;
+    if (adminTimer) { clearInterval(adminTimer); adminTimer = null; }
+    $("adminBtn").style.display = "none";
+    $("adminView").style.display = "none";
+    document.querySelector("main").classList.remove("admin-wide");
     $("loginCard").style.display = "block";
     if (msg) { const n = $("loginNotice"); n.className = "notice info"; n.textContent = msg; }
   }
@@ -566,6 +623,158 @@
   $("downloadBtn").addEventListener("click", () => grab("", lastResultName));
   $("subBtn").addEventListener("click", () => grab("?v=subtitles", lastSubName));
   $("refreshBtn").addEventListener("click", check);
+
+  // ---- admin dashboard (visible only to accounts flagged admin server-side) ----
+  let isAdmin = false, inAdmin = false, adminTimer = null;
+  const LANG = { en: "English", fa: "Persian" };
+
+  async function refreshMe() {
+    try {
+      const r = await authedFetch("/api/me");
+      if (!r.ok) { return; }                   // older backend / not admin -> no link
+      const d = await r.json();
+      isAdmin = !!d.is_admin;
+      $("adminBtn").style.display = isAdmin ? "inline" : "none";
+    } catch (e) { /* AuthError already routed to login */ }
+  }
+
+  function enterAdmin() {
+    inAdmin = true;
+    document.querySelector(".tabs").style.display = "none";
+    $("form").style.display = "none";
+    document.querySelector(".how").style.display = "none";
+    $("statusCard").style.display = "none";
+    $("adminView").style.display = "block";
+    $("adminBtn").textContent = "← Back";
+    document.querySelector("main").classList.add("admin-wide");
+    loadAdminJobs();
+    if (!adminTimer) adminTimer = setInterval(loadAdminJobs, 15000);
+  }
+  function exitAdmin() {
+    inAdmin = false;
+    if (adminTimer) { clearInterval(adminTimer); adminTimer = null; }
+    $("adminView").style.display = "none";
+    $("adminBtn").textContent = "Dashboard";
+    document.querySelector("main").classList.remove("admin-wide");
+    if (jobId) { $("statusCard").style.display = "block"; }
+    else {
+      document.querySelector(".tabs").style.display = "";
+      $("form").style.display = "";
+      document.querySelector(".how").style.display = "";
+    }
+  }
+
+  const fmtWhen = iso => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+  const statusInfo = j => {
+    const s = j.status || "queued";
+    if (j.ready || s === "ready") return { label: "Ready", cls: "b-ok" };
+    if (s === "error") return { label: "Error", cls: "b-err" };
+    if (s === "processing") return { label: "Processing", cls: "b-info" };
+    if (s === "uploading") return { label: "Uploading", cls: "b-grey" };
+    return { label: "Queued", cls: "b-info" };
+  };
+  const cell = text => { const td = document.createElement("td"); td.textContent = text; return td; };
+  const metric = (label, val) => {
+    const c = document.createElement("div"); c.className = "metric";
+    const l = document.createElement("div"); l.className = "metric-l"; l.textContent = label;
+    const v = document.createElement("div"); v.className = "metric-v"; v.textContent = String(val);
+    c.appendChild(l); c.appendChild(v); return c;
+  };
+
+  function renderAdmin(jobs) {
+    const active = jobs.filter(j => ["uploading", "queued", "processing"].includes(j.status)).length;
+    const ready = jobs.filter(j => j.ready || j.status === "ready").length;
+    const errors = jobs.filter(j => j.status === "error").length;
+    const m = $("adminMetrics"); m.textContent = "";
+    m.appendChild(metric("Total requests", jobs.length));
+    m.appendChild(metric("In progress", active));
+    m.appendChild(metric("Ready", ready));
+    m.appendChild(metric("Errors", errors));
+
+    const tb = $("adminRows"); tb.textContent = "";
+    if (!jobs.length) {
+      const tr = document.createElement("tr"), td = document.createElement("td");
+      td.colSpan = 7; td.className = "empty"; td.textContent = "No requests yet.";
+      tr.appendChild(td); tb.appendChild(tr); return;
+    }
+    for (const j of jobs) {
+      const tr = document.createElement("tr");
+      tr.appendChild(cell(fmtWhen(j.submitted_at)));
+      tr.appendChild(cell(j.owner || "—"));
+      tr.appendChild(cell(j.kind === "audio" ? "Transcribe" : "Translate"));
+      tr.appendChild(cell(LANG[j.target_lang] || j.target_lang || "—"));
+      const fc = cell(j.filename || "—"); fc.className = "file"; fc.title = j.filename || "";
+      tr.appendChild(fc);
+
+      const sc = document.createElement("td");
+      const si = statusInfo(j);
+      const badge = document.createElement("span"); badge.className = "badge " + si.cls; badge.textContent = si.label;
+      sc.appendChild(badge);
+      if (j.kind === "audio" && (j.ready || j.status === "ready")) {
+        const sub = document.createElement("div"); sub.className = "substatus";
+        sub.textContent = j.has_subtitles ? "subtitles ready"
+          : j.subtitles_status === "generating" ? "subtitles preparing…"
+          : j.subtitles_status === "error" ? "no subtitles" : "";
+        if (sub.textContent) sc.appendChild(sub);
+      }
+      if (j.status === "error" && j.error) {
+        const er = document.createElement("div"); er.className = "substatus err";
+        er.textContent = String(j.error).slice(0, 80); er.title = j.error; sc.appendChild(er);
+      }
+      tr.appendChild(sc);
+
+      const rc = document.createElement("td");
+      if (j.ready || j.status === "ready") {
+        const a = document.createElement("button"); a.type = "button"; a.className = "linkbtn"; a.textContent = "Download";
+        a.addEventListener("click", () => adminGrab(j.job_id, "", j.result_name || "result"));
+        rc.appendChild(a);
+        if (j.has_subtitles) {
+          const s = document.createElement("button"); s.type = "button"; s.className = "linkbtn srt"; s.textContent = ".srt";
+          s.addEventListener("click", () => adminGrab(j.job_id, "?v=subtitles", j.subtitle_name || "subtitles.srt"));
+          rc.appendChild(s);
+        }
+      } else { rc.textContent = "—"; }
+      tr.appendChild(rc);
+      tb.appendChild(tr);
+    }
+  }
+
+  async function loadAdminJobs() {
+    try {
+      const r = await authedFetch("/api/admin/jobs");
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || r.statusText); }
+      const d = await r.json();
+      renderAdmin(d.jobs || []);
+      const n = $("adminNotice"); n.className = "notice"; n.textContent = "";
+      $("adminUpdated").textContent = "Updated " +
+        new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ".";
+    } catch (e) {
+      if (e instanceof AuthError) return;
+      const n = $("adminNotice"); n.className = "notice err"; n.textContent = "Couldn't load activity: " + e.message;
+    }
+  }
+
+  async function adminGrab(jid, query, name) {
+    const n = $("adminNotice");
+    try {
+      const r = await authedFetch("/api/admin/download/" + encodeURIComponent(jid) + query);
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.detail || r.statusText); }
+      const blob = await r.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = name || "result";
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+    } catch (e) {
+      if (e instanceof AuthError) return;
+      n.className = "notice err"; n.textContent = "Download failed: " + e.message;
+    }
+  }
+
+  $("adminBtn").addEventListener("click", () => inAdmin ? exitAdmin() : enterAdmin());
+  $("adminRefresh").addEventListener("click", loadAdminJobs);
 
   // ---- on load: gate the whole site behind login ----
   if (token()) showApp(); else showLogin();
