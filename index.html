@@ -181,6 +181,11 @@
   .linkbtn{background:none; border:none; color:var(--blue); font:inherit; font-size:13px; font-weight:600; text-decoration:underline; cursor:pointer; padding:0; margin-right:10px}
   .linkbtn.srt{color:var(--gold-dark); font-weight:500}
   .linkbtn:hover{filter:brightness(1.2)}
+  #adminByUser{margin-top:20px}
+  .byuser-title{font-family:'Amiri',Georgia,serif; font-weight:700; color:var(--gold-dark); font-size:17px; margin-bottom:8px}
+  .byuser-row{display:flex; justify-content:space-between; gap:16px; padding:8px 12px; border:1px solid var(--line); border-radius:8px; margin-bottom:6px; background:#fff; font-size:14px; max-width:360px}
+  .byuser-row span:last-child{font-weight:700; color:var(--blue)}
+  .cost-note{margin-top:18px; color:var(--grey); font-size:12.5px; line-height:1.6; max-width:680px}
 
   /* ---- footer ---- */
   .site-footer{
@@ -324,11 +329,20 @@
         <table class="dash">
           <thead><tr>
             <th>When</th><th>User</th><th>Task</th><th>Language</th>
-            <th>File</th><th>Status</th><th>Result</th>
+            <th>File</th><th>Status</th><th>Cost (est.)</th><th>Result</th>
           </tr></thead>
           <tbody id="adminRows"></tbody>
         </table>
       </div>
+      <div id="adminByUser"></div>
+      <p class="cost-note">
+        Cost is <strong>estimated</strong> from Gemini token usage at the rate set in the page
+        (currently $0.10 / $0.40 per million input / output tokens — adjust to your Vertex rate).
+        It covers the translation and transcription model calls (the dominant cost) and is tracked
+        going forward; jobs run before tracking show “—”. It excludes Speech‑to‑Text (subtitles) and
+        Cloud Run / Storage, which are small. For the authoritative all‑in total see the
+        Google&nbsp;Cloud billing console.
+      </p>
       <button type="button" class="submit secondary" id="adminRefresh" style="max-width:200px; margin-top:18px">Refresh now</button>
     </section>
 
@@ -691,6 +705,17 @@
   let isAdmin = false, inAdmin = false, adminTimer = null;
   const LANG = { en: "English", fa: "Persian" };
 
+  // Estimated Gemini/Vertex price (USD per 1,000,000 tokens). Adjust to your
+  // actual Vertex rate — this is the only place to change it.
+  const PRICE_PER_1M = { input: 0.10, output: 0.40 };
+  function jobCost(j) {
+    const u = j.usage;
+    if (!u || !((u.input_tokens || 0) + (u.output_tokens || 0))) return null;
+    return (u.input_tokens || 0) / 1e6 * PRICE_PER_1M.input
+         + (u.output_tokens || 0) / 1e6 * PRICE_PER_1M.output;
+  }
+  const fmtUsd = n => "$" + (n >= 1 ? n.toFixed(2) : n.toFixed(4));
+
   async function refreshMe() {
     try {
       const r = await authedFetch("/api/me");
@@ -752,17 +777,28 @@
     const active = jobs.filter(j => ["uploading", "queued", "processing"].includes(j.status)).length;
     const ready = jobs.filter(j => j.ready || j.status === "ready").length;
     const errors = jobs.filter(j => j.status === "error").length;
+    let totalCost = 0; const byUser = {};
+    for (const j of jobs) {
+      const c = jobCost(j);
+      if (c != null) {
+        totalCost += c;
+        const k = j.owner || "—";
+        (byUser[k] = byUser[k] || { cost: 0, jobs: 0 }).cost += c;
+        byUser[k].jobs++;
+      }
+    }
     const m = $("adminMetrics"); m.textContent = "";
     m.appendChild(metric("Total requests", jobs.length));
     m.appendChild(metric("In progress", active));
     m.appendChild(metric("Ready", ready));
     m.appendChild(metric("Errors", errors));
+    m.appendChild(metric("Est. spend", fmtUsd(totalCost)));
 
     const tb = $("adminRows"); tb.textContent = "";
     if (!jobs.length) {
       const tr = document.createElement("tr"), td = document.createElement("td");
-      td.colSpan = 7; td.className = "empty"; td.textContent = "No requests yet.";
-      tr.appendChild(td); tb.appendChild(tr); return;
+      td.colSpan = 8; td.className = "empty"; td.textContent = "No requests yet.";
+      tr.appendChild(td); tb.appendChild(tr); $("adminByUser").textContent = ""; return;
     }
     for (const j of jobs) {
       const tr = document.createElement("tr");
@@ -790,6 +826,12 @@
       }
       tr.appendChild(sc);
 
+      const c = jobCost(j);
+      const cc = cell(c != null ? fmtUsd(c) : "—");
+      if (c != null && j.usage) cc.title = (j.usage.input_tokens || 0).toLocaleString() + " in / "
+        + (j.usage.output_tokens || 0).toLocaleString() + " out tokens";
+      tr.appendChild(cc);
+
       const rc = document.createElement("td");
       if (j.ready || j.status === "ready") {
         const a = document.createElement("button"); a.type = "button"; a.className = "linkbtn"; a.textContent = "Download";
@@ -803,6 +845,21 @@
       } else { rc.textContent = "—"; }
       tr.appendChild(rc);
       tb.appendChild(tr);
+    }
+
+    // estimated spend by person (answers "what is each person costing")
+    const bu = $("adminByUser"); bu.textContent = "";
+    const users = Object.keys(byUser).sort((a, b) => byUser[b].cost - byUser[a].cost);
+    if (users.length) {
+      const h = document.createElement("div"); h.className = "byuser-title";
+      h.textContent = "Estimated spend by person"; bu.appendChild(h);
+      for (const u of users) {
+        const row = document.createElement("div"); row.className = "byuser-row";
+        const nm = document.createElement("span");
+        nm.textContent = u + " · " + byUser[u].jobs + (byUser[u].jobs === 1 ? " job" : " jobs");
+        const ct = document.createElement("span"); ct.textContent = fmtUsd(byUser[u].cost);
+        row.appendChild(nm); row.appendChild(ct); bu.appendChild(row);
+      }
     }
   }
 
