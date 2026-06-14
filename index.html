@@ -340,11 +340,13 @@
       </div>
 
       <div class="field">
-        <label for="lang">Output language</label>
+        <label for="lang" id="langLabel">Output language</label>
         <select id="lang">
-          <option value="en" selected>English</option>
-          <option value="fa">Persian</option>
+          <option value="fa" selected>Persian</option>
         </select>
+        <p id="langNote" class="hint" style="margin-top:6px; display:none">
+          Translation currently outputs Persian (the glossary, style, and quality
+          checks are built for Persian). English output isn't available yet.</p>
       </div>
 
       <button class="submit" type="submit" id="submitBtn">Submit for translation</button>
@@ -524,8 +526,24 @@
       ? ".pdf,.docx,.md,.markdown,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
       : "audio/*,.mp3,.m4a,.wav,.aac,.ogg";
     $("submitBtn").textContent = pdf ? "Submit for translation" : "Submit for transcription";
+    setLangOptions(kind);
     resetFile();
   }));
+
+  // Translation only outputs Persian (the pipeline is Persian-specific). Audio
+  // transcription can be English or Persian (the spoken language).
+  function setLangOptions(k) {
+    if (k === "audio") {
+      $("lang").innerHTML = '<option value="en" selected>English</option><option value="fa">Persian</option>';
+      $("langLabel").textContent = "Spoken language";
+      $("langNote").style.display = "none";
+    } else {
+      $("lang").innerHTML = '<option value="fa" selected>Persian</option>';
+      $("langLabel").textContent = "Output language";
+      $("langNote").style.display = "block";
+    }
+  }
+  setLangOptions(kind);   // init for the default (translate) tab
 
   const drop = $("drop"), fileInput = $("file");
   drop.addEventListener("click", () => fileInput.click());
