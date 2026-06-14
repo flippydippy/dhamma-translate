@@ -336,12 +336,14 @@
       </div>
       <div id="adminByUser"></div>
       <p class="cost-note">
-        Cost is <strong>estimated</strong> from Gemini token usage at the rate set in the page
-        (currently $0.10 / $0.40 per million input / output tokens — adjust to your Vertex rate).
-        It covers the translation and transcription model calls (the dominant cost) and is tracked
-        going forward; jobs run before tracking show “—”. It excludes Speech‑to‑Text (subtitles) and
-        Cloud Run / Storage, which are small. For the authoritative all‑in total see the
-        Google&nbsp;Cloud billing console.
+        Cost is computed from Gemini token usage at $1.50 / $9.00 per million input / output tokens
+        (cache‑hit input billed at $0.15). Exact figures are <strong>measured</strong> per job going
+        forward; a <strong>≈</strong> prefix marks <strong>rough ballpark</strong> estimates for jobs
+        that ran before metering (order‑of‑magnitude, from file size and how far the job got). It
+        covers the translation and transcription model calls (the dominant cost) and excludes
+        Speech‑to‑Text (subtitles) and Cloud Run / Storage, which are small. For the authoritative
+        all‑in total see the Google&nbsp;Cloud billing console. Adjust the rate in the page if your
+        Vertex pricing differs.
       </p>
       <button type="button" class="submit secondary" id="adminRefresh" style="max-width:200px; margin-top:18px">Refresh now</button>
     </section>
@@ -705,14 +707,47 @@
   let isAdmin = false, inAdmin = false, adminTimer = null;
   const LANG = { en: "English", fa: "Persian" };
 
-  // Estimated Gemini/Vertex price (USD per 1,000,000 tokens). Adjust to your
-  // actual Vertex rate — this is the only place to change it.
-  const PRICE_PER_1M = { input: 0.10, output: 0.40 };
+  // Vertex Gemini pricing (USD per 1,000,000 tokens). The only place to change it.
+  const PRICE_PER_1M = { input: 1.50, output: 9.00, cachedInput: 0.15 };
+
+  // Measured cost from captured token usage — prices cache hits at the lower rate.
   function jobCost(j) {
     const u = j.usage;
     if (!u || !((u.input_tokens || 0) + (u.output_tokens || 0))) return null;
-    return (u.input_tokens || 0) / 1e6 * PRICE_PER_1M.input
+    const cached = Math.min(u.cached_tokens || 0, u.input_tokens || 0);
+    const freshIn = (u.input_tokens || 0) - cached;
+    return freshIn / 1e6 * PRICE_PER_1M.input
+         + cached / 1e6 * PRICE_PER_1M.cachedInput
          + (u.output_tokens || 0) / 1e6 * PRICE_PER_1M.output;
+  }
+
+  // Rough ballpark for jobs that ran BEFORE token capture (flagged ≈, order of
+  // magnitude only). audio: duration from file size (~0.96 MB/min @128kbps),
+  // Gemini audio input ≈ 32 tok/s, transcript ≈ 200 tok/min. pdf: source text
+  // ≈ 90k tok/MB, reprocessed ~7x (input) + ~2.2x generated (output) across
+  // draft+edit+QA, scaled by how far the job got.
+  function estCost(j) {
+    const mb = (j.bytes || 0) / 1048576;
+    if (!mb) return null;
+    let inTok, outTok;
+    if (j.kind === "audio") {
+      const mins = mb / 0.96;
+      inTok = mins * 60 * 32; outTok = mins * 200;
+    } else {
+      const src = mb * 90000;
+      const frac = j.progress && j.progress.total ? (j.progress.done / j.progress.total)
+                 : j.status === "ready" ? 1 : j.status === "error" ? 0.2 : 0.5;
+      inTok = src * 7 * frac; outTok = src * 2.2 * frac;
+    }
+    return inTok / 1e6 * PRICE_PER_1M.input + outTok / 1e6 * PRICE_PER_1M.output;
+  }
+
+  // Measured cost if we have it, else a rough estimate; flag which.
+  function costOf(j) {
+    const m = jobCost(j);
+    if (m != null) return { cost: m, est: false };
+    const e = estCost(j);
+    return e != null ? { cost: e, est: true } : { cost: null, est: false };
   }
   const fmtUsd = n => "$" + (n >= 1 ? n.toFixed(2) : n.toFixed(4));
 
@@ -779,7 +814,7 @@
     const errors = jobs.filter(j => j.status === "error").length;
     let totalCost = 0; const byUser = {};
     for (const j of jobs) {
-      const c = jobCost(j);
+      const c = costOf(j).cost;
       if (c != null) {
         totalCost += c;
         const k = j.owner || "—";
@@ -826,10 +861,17 @@
       }
       tr.appendChild(sc);
 
-      const c = jobCost(j);
-      const cc = cell(c != null ? fmtUsd(c) : "—");
-      if (c != null && j.usage) cc.title = (j.usage.input_tokens || 0).toLocaleString() + " in / "
-        + (j.usage.output_tokens || 0).toLocaleString() + " out tokens";
+      const { cost, est } = costOf(j);
+      const cc = cell(cost != null ? (est ? "≈" : "") + fmtUsd(cost) : "—");
+      if (cost != null) {
+        cc.title = est
+          ? "rough estimate — this job ran before token metering"
+          : (j.usage.input_tokens || 0).toLocaleString() + " in / "
+            + (j.usage.output_tokens || 0).toLocaleString() + " out"
+            + (j.usage.cached_tokens ? " / " + j.usage.cached_tokens.toLocaleString() + " cached" : "")
+            + " tokens";
+        if (est) cc.style.color = "var(--grey)";
+      }
       tr.appendChild(cc);
 
       const rc = document.createElement("td");
