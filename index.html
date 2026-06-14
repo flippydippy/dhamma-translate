@@ -10,6 +10,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Sans:ital,wght@0,300;0,400;0,500;0,700&display=swap" rel="stylesheet">
+<script>
+  // Set the theme before first paint (no flash). Saved choice wins; else follow OS.
+  (function () {
+    try {
+      var t = localStorage.getItem("dt_theme");
+      if (t !== "dark" && t !== "light")
+        t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) { document.documentElement.setAttribute("data-theme", "light"); }
+  })();
+</script>
 <style>
   /* ---- Design Standards v0.6 (Vipassana Meditation as Taught by S.N. Goenka) ---- */
   :root{
@@ -49,8 +60,25 @@
     gap:16px; padding:16px 24px;
   }
   .nav .brand{display:inline-flex; align-items:center; line-height:0}
-  .nav .brand img{height:46px; width:auto}
-  .logo-dark{display:none}
+  .logo{display:none}                                   /* low specificity: show-rules below win */
+  .nav .brand img.logo{height:46px; width:auto}
+  /* desktop shows the wide one-line lockup; mobile the compact two-line.
+     data-theme picks the light vs reverse (white-text) artwork. */
+  @media (min-width:561px){
+    [data-theme="light"] .logo-1l-light{display:inline-block}
+    [data-theme="dark"]  .logo-1l-dark{display:inline-block}
+  }
+  @media (max-width:560px){
+    [data-theme="light"] .logo-2l-light{display:inline-block}
+    [data-theme="dark"]  .logo-2l-dark{display:inline-block}
+  }
+  .iconbtn{background:none; border:none; cursor:pointer; color:var(--grey);
+    padding:4px 2px; display:inline-flex; align-items:center; line-height:0}
+  .iconbtn:hover{color:var(--blue)}
+  .iconbtn svg{width:20px; height:20px}
+  .ic-sun{display:none}
+  [data-theme="dark"] .ic-moon{display:none}
+  [data-theme="dark"] .ic-sun{display:inline-flex}
   .signout{
     background:none; border:none; color:var(--grey); font:inherit;
     font-size:13.5px; text-decoration:underline; cursor:pointer;
@@ -203,55 +231,68 @@
   }
   .site-footer .pali{font-family:'Amiri',Georgia,serif; font-style:italic; font-size:17px; color:#fff; display:block; margin-bottom:4px}
   .site-footer .muted{color:#bcc3d4}
+  .site-footer a{color:var(--gold); text-decoration:underline}
+  .site-footer a:hover{color:#d6a94e}
 
   @media (max-width:560px){
     .nav{padding:14px 16px}
-    .nav .brand img{height:38px}
+    .nav .brand img.logo{height:38px}
     main{padding:4px 16px 20px}
     .hero{padding:30px 4px 22px}
     .card{padding:24px 18px}
   }
 
-  /* ---- dark mode (Design Standards dark palette) ---- */
-  @media (prefers-color-scheme:dark){
-    :root{
-      --ink:#E8E8E8; --grey:#BFBFBF; --bg:#1A1A1A; --bg-warm:#262320;
-      --card:#222222; --line:#3a3733; --accent:var(--gold); --muted:var(--grey);
-      --ok-bg:#1f2740; --ok-ink:#cdd7ec; --ok-line:#34406a;
-      --info-bg:#2c2417; --info-ink:#e6cf9a; --info-line:#4a3c1f;
-      --err-bg:#33211c; --err-ink:#e6a892; --err-line:#5a3429;
-    }
-    body{background:var(--bg)}
-    .topbar{background:var(--gold)}
-    .nav{background:#161616; border-bottom-color:var(--gold)}
-    .logo-light{display:none}
-    .logo-dark{display:inline-block}
-    h1,.card-title{color:#E8E8E8}
-    .how h2{color:var(--gold)}
-    .tab{background:#222; color:var(--grey)}
-    .tab[aria-selected="true"]{background:var(--gold); border-color:var(--gold); color:#1A1A1A}
-    select#lang, input[type=email], input[type=text], input[type=password]{background:#1a1a1a; color:var(--ink)}
-    input:focus, select#lang:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(183,135,48,.25)}
-    /* dark-mode buttons use gold (per dark-mode graphical palette) for contrast on black */
-    .submit{background:var(--gold); border-color:var(--gold); color:#1A1A1A}
-    .submit:hover{box-shadow:0 6px 18px rgba(183,135,48,.30)}
-    button.submit:disabled{background:#4a4742; border-color:#4a4742; color:#9a958c}
-    .submit.secondary{background:transparent; color:var(--gold); border:1px solid var(--line)}
-    .submit.secondary:hover{border-color:var(--gold)}
-    .drop strong{color:var(--gold)}
-    .site-footer{background:#161616; border-top:1px solid var(--gold)}
+  /* ---- dark mode (Design Standards dark palette; toggled via data-theme) ---- */
+  :root[data-theme="dark"]{
+    --ink:#E8E8E8; --grey:#BFBFBF; --bg:#1A1A1A; --bg-warm:#262320;
+    --card:#222222; --line:#3a3733; --accent:var(--gold); --muted:var(--grey);
+    --ok-bg:#1f2740; --ok-ink:#cdd7ec; --ok-line:#34406a;
+    --info-bg:#2c2417; --info-ink:#e6cf9a; --info-line:#4a3c1f;
+    --err-bg:#33211c; --err-ink:#e6a892; --err-line:#5a3429;
   }
+  [data-theme="dark"] body{background:var(--bg)}
+  [data-theme="dark"] .topbar{background:var(--gold)}
+  [data-theme="dark"] .nav{background:#161616; border-bottom-color:var(--gold)}
+  [data-theme="dark"] h1, [data-theme="dark"] .card-title{color:#E8E8E8}
+  [data-theme="dark"] .how h2{color:var(--gold)}
+  [data-theme="dark"] .iconbtn:hover{color:var(--gold)}
+  [data-theme="dark"] .tab{background:#222; color:var(--grey)}
+  [data-theme="dark"] .tab[aria-selected="true"]{background:var(--gold); border-color:var(--gold); color:#1A1A1A}
+  [data-theme="dark"] select#lang, [data-theme="dark"] input[type=email], [data-theme="dark"] input[type=text], [data-theme="dark"] input[type=password]{background:#1a1a1a; color:var(--ink)}
+  [data-theme="dark"] input:focus, [data-theme="dark"] select#lang:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(183,135,48,.25)}
+  /* dark-mode buttons use gold (per dark-mode graphical palette) for contrast on black */
+  [data-theme="dark"] .submit{background:var(--gold); border-color:var(--gold); color:#1A1A1A}
+  [data-theme="dark"] .submit:hover{box-shadow:0 6px 18px rgba(183,135,48,.30)}
+  [data-theme="dark"] button.submit:disabled{background:#4a4742; border-color:#4a4742; color:#9a958c}
+  [data-theme="dark"] .submit.secondary{background:transparent; color:var(--gold); border:1px solid var(--line)}
+  [data-theme="dark"] .submit.secondary:hover{border-color:var(--gold)}
+  [data-theme="dark"] .drop strong{color:var(--gold)}
+  [data-theme="dark"] .site-footer{background:#161616; border-top:1px solid var(--gold)}
+  /* dashboard surfaces in dark mode */
+  [data-theme="dark"] .metric, [data-theme="dark"] .table-wrap, [data-theme="dark"] .byuser-row{background:#222}
+  [data-theme="dark"] .metric-v, [data-theme="dark"] .dash-title{color:#E8E8E8}
+  [data-theme="dark"] .how h2, [data-theme="dark"] .byuser-title{color:var(--gold)}
+  [data-theme="dark"] table.dash th{background:#0f1f3d}
+  [data-theme="dark"] table.dash tbody tr:nth-child(even){background:#1d1d1d}
+  [data-theme="dark"] .badge.b-grey{background:#333}
+  [data-theme="dark"] .linkbtn, [data-theme="dark"] .byuser-row span:last-child{color:var(--gold)}
 </style>
 </head>
 <body>
 
 <div class="topbar"></div>
 <header class="nav">
-  <a class="brand" href="./" aria-label="Vipassana Meditation as Taught by S.N. Goenka">
-    <img class="logo-light" src="assets/logo.svg" alt="Vipassana Meditation as Taught by S.N. Goenka, in the Tradition of Sayagyi U Ba Khin">
-    <img class="logo-dark" src="assets/logo-reverse.svg" alt="Vipassana Meditation as Taught by S.N. Goenka, in the Tradition of Sayagyi U Ba Khin">
+  <a class="brand" href="./" aria-label="Vipassana Meditation as Taught by S.N. Goenka, in the Tradition of Sayagyi U Ba Khin">
+    <img class="logo logo-1l-light" src="assets/logo-1l.svg" alt="">
+    <img class="logo logo-1l-dark"  src="assets/logo-1l-reverse.svg" alt="">
+    <img class="logo logo-2l-light" src="assets/logo-2l.svg" alt="">
+    <img class="logo logo-2l-dark"  src="assets/logo-2l-reverse.svg" alt="">
   </a>
   <div style="display:flex; align-items:center; gap:14px">
+    <button type="button" id="themeBtn" class="iconbtn" aria-label="Toggle dark mode" title="Toggle dark mode">
+      <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
     <button type="button" id="adminBtn" class="signout" style="display:none">Dashboard</button>
     <button type="button" id="logoutBtn" class="signout" style="display:none">Sign out</button>
   </div>
@@ -291,11 +332,11 @@
 
     <form class="card" id="form">
       <div class="field">
-        <label id="fileLabel">PDF file <span class="hint">(up to 50 MB)</span></label>
+        <label id="fileLabel">PDF file(s) <span class="hint">(up to 50 MB each — you can select several)</span></label>
         <div class="drop" id="drop" tabindex="0" role="button">
-          <span id="dropText">Drop the file here or <strong>browse</strong></span>
+          <span id="dropText">Drop file(s) here or <strong>browse</strong></span>
         </div>
-        <input type="file" id="file" accept=".pdf">
+        <input type="file" id="file" accept=".pdf" multiple>
       </div>
 
       <div class="field">
@@ -374,7 +415,8 @@
 
 <footer class="site-footer">
   <span class="pali">Bhavatu sabba maṅgalaṃ</span>
-  <span class="muted">Dhamma Translate · in the tradition of S.N. Goenka</span>
+  <span class="muted">Dhamma Translate · in the tradition of S.N. Goenka — a
+    <a href="https://www.dhamma.org" target="_blank" rel="noopener">Dhamma.org</a> project</span>
 </footer>
 
 <script>
@@ -385,6 +427,14 @@
 
   const $ = id => document.getElementById(id);
   let kind = "pdf";
+
+  // ---- dark-mode toggle (data-theme set pre-paint by the <head> script) ----
+  const applyTheme = t => {
+    document.documentElement.setAttribute("data-theme", t);
+    try { localStorage.setItem("dt_theme", t); } catch (e) {}
+  };
+  $("themeBtn").addEventListener("click", () =>
+    applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark"));
 
   // ---- auth (admin-provisioned; whole site behind login) ----
   const TKEY = "dt_token", EKEY = "dt_exp";
@@ -468,8 +518,8 @@
     document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
     const pdf = kind === "pdf";
     $("fileLabel").innerHTML = pdf
-      ? 'PDF file <span class="hint">(up to 50 MB)</span>'
-      : 'Audio file <span class="hint">(mp3 / m4a / wav, up to 500 MB)</span>';
+      ? 'PDF file(s) <span class="hint">(up to 50 MB each — you can select several)</span>'
+      : 'Audio file(s) <span class="hint">(mp3 / m4a / wav, up to 500 MB each — you can select several)</span>';
     $("file").accept = pdf ? ".pdf,application/pdf" : "audio/*,.mp3,.m4a,.wav,.aac,.ogg";
     $("submitBtn").textContent = pdf ? "Submit for translation" : "Submit for transcription";
     resetFile();
@@ -484,9 +534,20 @@
   fileInput.addEventListener("change", showFile);
 
   function showFile() {
-    const f = fileInput.files[0];
-    if (!f) return;
-    $("dropText").innerHTML = '<span class="picked">' + f.name + "</span> (" + (f.size/1048576).toFixed(1) + " MB)";
+    const fs = Array.from(fileInput.files || []);
+    if (!fs.length) { resetFile(); return; }
+    const dt = $("dropText"); dt.textContent = "";
+    const span = document.createElement("span"); span.className = "picked";  // textContent = XSS-safe
+    if (fs.length === 1) {
+      span.textContent = fs[0].name;
+      dt.appendChild(span);
+      dt.appendChild(document.createTextNode(" (" + (fs[0].size / 1048576).toFixed(1) + " MB)"));
+    } else {
+      const total = fs.reduce((s, f) => s + f.size, 0) / 1048576;
+      span.textContent = fs.length + " files";
+      dt.appendChild(span);
+      dt.appendChild(document.createTextNode(" (" + total.toFixed(1) + " MB total)"));
+    }
   }
   function resetFile() {
     fileInput.value = "";
@@ -494,57 +555,87 @@
   }
   function notice(cls, msg) { const n = $("notice"); n.className = "notice " + cls; n.textContent = msg; }
 
+  // Upload one file end-to-end (create -> parts -> finalize); returns its job_id.
+  // `pre` prefixes progress messages when several files are in flight.
+  async function uploadOne(f, pre) {
+    let r = await authedFetch("/api/create", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, target_lang: $("lang").value, filename: f.name, size: f.size })
+    });
+    let d = await r.json();
+    if (!r.ok) throw new Error(d.detail || r.statusText);
+    const jid = d.job_id, partSize = d.part_size;
+    const nParts = Math.max(1, Math.ceil(f.size / partSize));
+    for (let i = 0; i < nParts; i++) {
+      notice("info", pre + "uploading… part " + (i + 1) + " of " + nParts +
+             " (" + Math.round(100 * i / nParts) + "%)");
+      const slice = f.slice(i * partSize, Math.min((i + 1) * partSize, f.size));
+      const pr = await authedFetch("/api/upload/" + jid + "/" + i, {
+        method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: slice
+      });
+      if (!pr.ok) { const pd = await pr.json().catch(() => ({}));
+        throw new Error("part " + (i + 1) + ": " + (pd.detail || pr.statusText)); }
+    }
+    notice("info", pre + "finishing…");
+    r = await authedFetch("/api/finalize/" + jid, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parts: nParts })
+    });
+    d = await r.json();
+    if (!r.ok) throw new Error(d.detail || r.statusText);
+    return d.job_id;
+  }
+
+  function renderResults(results) {
+    const n = $("notice");
+    const ok = results.filter(r => r.link);
+    n.className = "notice " + (ok.length ? (ok.length < results.length ? "info" : "ok") : "err");
+    n.textContent = "";
+    const head = document.createElement("div");
+    head.textContent = ok.length
+      ? "Received " + ok.length + (ok.length === 1 ? " file" : " files") + ". Save " +
+        (ok.length === 1 ? "this link" : "these links") + " — each result appears there when it's ready:"
+      : "Upload failed.";
+    n.appendChild(head);
+    const list = document.createElement("div"); list.style.marginTop = "8px";
+    for (const r of results) {
+      const row = document.createElement("div"); row.style.marginTop = "6px"; row.style.wordBreak = "break-all";
+      const nm = document.createElement("strong"); nm.textContent = r.name + " — "; row.appendChild(nm);
+      if (r.link) { const a = document.createElement("a"); a.href = r.link; a.textContent = r.link; row.appendChild(a); }
+      else { const er = document.createElement("span"); er.textContent = "failed: " + r.error; er.style.color = "var(--err-ink)"; row.appendChild(er); }
+      list.appendChild(row);
+    }
+    n.appendChild(list);
+  }
+
   $("form").addEventListener("submit", async e => {
     e.preventDefault();
-    const f = fileInput.files[0];
-    if (!f) return notice("err", "Please choose a file first.");
-    if (f.size > MAX_MB[kind] * 1048576) return notice("err", "File too large — the limit is " + MAX_MB[kind] + " MB.");
+    const files = Array.from(fileInput.files || []);
+    if (!files.length) return notice("err", "Please choose at least one file first.");
+    const tooBig = files.filter(f => f.size > MAX_MB[kind] * 1048576);
+    if (tooBig.length) return notice("err",
+      "Too large (limit " + MAX_MB[kind] + " MB each): " + tooBig.map(f => f.name).join(", "));
     if (!API_URL) {
       return notice("info", "Submissions open soon — the processing service is being set up. " +
         "Please check back shortly.");
     }
     $("submitBtn").disabled = true;
-    notice("info", "Preparing upload…");
+    const results = [];
     try {
-      // 1. create the job
-      let r = await authedFetch("/api/create", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind, target_lang: $("lang").value,
-                               filename: f.name, size: f.size })
-      });
-      let d = await r.json();
-      if (!r.ok) throw new Error(d.detail || r.statusText);
-      const jobIdNew = d.job_id, partSize = d.part_size;
-      // 2. upload the file in parts, one at a time
-      const nParts = Math.max(1, Math.ceil(f.size / partSize));
-      for (let i = 0; i < nParts; i++) {
-        notice("info", "Uploading… part " + (i + 1) + " of " + nParts +
-               " (" + Math.round(100 * i / nParts) + "%)");
-        const slice = f.slice(i * partSize, Math.min((i + 1) * partSize, f.size));
-        const pr = await authedFetch("/api/upload/" + jobIdNew + "/" + i, {
-          method: "POST", headers: { "Content-Type": "application/octet-stream" },
-          body: slice
-        });
-        if (!pr.ok) { const pd = await pr.json().catch(() => ({}));
-          throw new Error("part " + (i + 1) + ": " + (pd.detail || pr.statusText)); }
+      for (let fi = 0; fi < files.length; fi++) {
+        const f = files[fi];
+        const pre = files.length > 1 ? "File " + (fi + 1) + " of " + files.length + " · " + f.name + " — " : "";
+        notice("info", pre + "preparing upload…");
+        try {
+          const jobId = await uploadOne(f, pre);
+          results.push({ name: f.name, link: location.origin + location.pathname + "?job=" + jobId });
+        } catch (err) {
+          if (err instanceof AuthError) return;   // showLogin already fired
+          results.push({ name: f.name, error: err.message });
+        }
       }
-      // 3. finalize
-      notice("info", "Finishing…");
-      r = await authedFetch("/api/finalize/" + jobIdNew, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parts: nParts })
-      });
-      d = await r.json();
-      if (!r.ok) throw new Error(d.detail || r.statusText);
-      const link = location.origin + location.pathname + "?job=" + d.job_id;
-      const n = $("notice"); n.className = "notice ok";
-      n.textContent = "Received! Save this link — your result will be available there once it's ready: ";
-      const a = document.createElement("a"); a.href = link; a.textContent = link;
-      n.appendChild(a);
+      renderResults(results);
       resetFile();
-    } catch (err) {
-      if (err instanceof AuthError) return;     // showLogin already fired
-      notice("err", "Something went wrong: " + err.message);
     } finally {
       $("submitBtn").disabled = false;
     }
