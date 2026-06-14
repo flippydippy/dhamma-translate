@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dhamma Translate — translation &amp; transcription of Dhamma materials</title>
-<meta name="description" content="Upload a PDF for translation or audio for transcription of S.N. Goenka Vipassana-tradition Dhamma materials. English and Persian.">
+<meta name="description" content="Upload a document (PDF, Word, Markdown, or text) for translation, or audio for transcription, of S.N. Goenka Vipassana-tradition Dhamma materials. English and Persian.">
 <meta name="theme-color" content="#1E3461">
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -303,7 +303,7 @@
   <section class="hero">
     <h1>Dhamma teachings, carried across languages</h1>
     <p class="lede">
-      Upload a PDF to translate, or an audio discourse to transcribe — in the
+      Upload a document to translate, or an audio discourse to transcribe — in the
       tradition of S.N. Goenka.
     </p>
   </section>
@@ -326,17 +326,17 @@
 
   <div id="app" style="display:none">
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="true" data-kind="pdf">Translate a PDF</button>
+      <button class="tab" role="tab" aria-selected="true" data-kind="pdf">Translate text</button>
       <button class="tab" role="tab" aria-selected="false" data-kind="audio">Transcribe audio</button>
     </div>
 
     <form class="card" id="form">
       <div class="field">
-        <label id="fileLabel">PDF file(s) <span class="hint">(up to 50 MB each — you can select several)</span></label>
+        <label id="fileLabel">Document file(s) <span class="hint">(PDF, Word, Markdown, or .txt — up to 50 MB each; select several)</span></label>
         <div class="drop" id="drop" tabindex="0" role="button">
           <span id="dropText">Drop file(s) here or <strong>browse</strong></span>
         </div>
-        <input type="file" id="file" accept=".pdf" multiple>
+        <input type="file" id="file" accept=".pdf,.docx,.md,.markdown,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown" multiple>
       </div>
 
       <div class="field">
@@ -401,7 +401,7 @@
     <section class="how">
       <h2>How it works</h2>
       <ol>
-        <li>Upload your PDF or audio file and choose the output language.</li>
+        <li>Upload your document (PDF, Word, Markdown, or text) or audio file and choose the output language.</li>
         <li>It is processed through a pipeline built for Goenka-tradition
             materials — terminology, Pāli conventions, and voice are checked
             against a curated glossary and language profile.</li>
@@ -518,9 +518,11 @@
     document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
     const pdf = kind === "pdf";
     $("fileLabel").innerHTML = pdf
-      ? 'PDF file(s) <span class="hint">(up to 50 MB each — you can select several)</span>'
+      ? 'Document file(s) <span class="hint">(PDF, Word, Markdown, or .txt — up to 50 MB each; select several)</span>'
       : 'Audio file(s) <span class="hint">(mp3 / m4a / wav, up to 500 MB each — you can select several)</span>';
-    $("file").accept = pdf ? ".pdf,application/pdf" : "audio/*,.mp3,.m4a,.wav,.aac,.ogg";
+    $("file").accept = pdf
+      ? ".pdf,.docx,.md,.markdown,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+      : "audio/*,.mp3,.m4a,.wav,.aac,.ogg";
     $("submitBtn").textContent = pdf ? "Submit for translation" : "Submit for transcription";
     resetFile();
   }));
