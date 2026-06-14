@@ -344,9 +344,7 @@
         <select id="lang">
           <option value="fa" selected>Persian</option>
         </select>
-        <p id="langNote" class="hint" style="margin-top:6px; display:none">
-          Translation currently outputs Persian (the glossary, style, and quality
-          checks are built for Persian). English output isn't available yet.</p>
+        <p id="langNote" class="hint" style="margin-top:6px; display:none"></p>
       </div>
 
       <button class="submit" type="submit" id="submitBtn">Submit for translation</button>
@@ -536,12 +534,11 @@
     if (k === "audio") {
       $("lang").innerHTML = '<option value="en" selected>English</option><option value="fa">Persian</option>';
       $("langLabel").textContent = "Spoken language";
-      $("langNote").style.display = "none";
     } else {
-      $("lang").innerHTML = '<option value="fa" selected>Persian</option>';
+      $("lang").innerHTML = '<option value="fa" selected>Persian</option><option value="en">English</option>';
       $("langLabel").textContent = "Output language";
-      $("langNote").style.display = "block";
     }
+    $("langNote").style.display = "none";
   }
   setLangOptions(kind);   // init for the default (translate) tab
 
