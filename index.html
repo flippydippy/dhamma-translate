@@ -405,8 +405,10 @@
         <li>It is processed through a pipeline built for Goenka-tradition
             materials — terminology, Pāli conventions, and voice are checked
             against a curated glossary and language profile.</li>
-        <li>Save the private link you receive — processing is automatic and your
-            result is usually ready to download within a few minutes.</li>
+        <li>Save the private link you receive — processing runs automatically in the
+            background, so you can close this page and come back. The link shows live
+            progress. A short text is usually ready in about 10–20 minutes; a longer
+            document or full book can take an hour or more (large or scanned PDFs longer).</li>
       </ol>
     </section>
   </div>
@@ -785,8 +787,8 @@
         // queued / uploading / processing — show real progress and auto-refresh
         renderProgress(d);
         sNotice("info", d.kind === "audio"
-          ? "Transcription usually takes a few minutes. This page updates on its own — or save the link and come back any time."
-          : "A full book is translated section by section — each one drafted, edited, and quality-checked — so a book can take a few hours. You can close this page and return to this link any time; it keeps working.");
+          ? "Transcription usually takes several minutes — longer for a long recording. This page updates on its own — or save the link and come back any time."
+          : "Each section is drafted, reviewed, edited, and quality-checked, so a short text is usually ready in about 10–20 minutes and a full book can take an hour or more. You can close this page and return to this link any time; it keeps working.");
         startPoll();
       }
     } catch (e) {
