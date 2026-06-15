@@ -839,22 +839,24 @@
   }
 
   // Rough ballpark for jobs that ran BEFORE token capture (flagged ≈, order of
-  // magnitude only). audio: duration from file size (~0.96 MB/min @128kbps),
-  // Gemini audio input ≈ 32 tok/s, transcript ≈ 200 tok/min. pdf: source text
-  // ≈ 90k tok/MB, reprocessed ~7x (input) + ~2.2x generated (output) across
-  // draft+edit+QA, scaled by how far the job got.
+  // magnitude only — the measured jobCost above is authoritative for new jobs).
+  // audio: duration from file size (~0.96 MB/min @128kbps), Gemini audio input
+  // ≈ 32 tok/s, transcript+thinking ≈ 600 tok/min. pdf: source text ≈ 90k tok/MB,
+  // reprocessed ~12x (input) across the 4-stage pipeline + auto-correct QA, and
+  // ~12x generated (output) — visible output is small but Gemini 3.x THINKING
+  // tokens (billed as output) dominate it ~5x. Scaled by how far the job got.
   function estCost(j) {
     const mb = (j.bytes || 0) / 1048576;
     if (!mb) return null;
     let inTok, outTok;
     if (j.kind === "audio") {
       const mins = mb / 0.96;
-      inTok = mins * 60 * 32; outTok = mins * 200;
+      inTok = mins * 60 * 32; outTok = mins * 600;
     } else {
       const src = mb * 90000;
       const frac = j.progress && j.progress.total ? (j.progress.done / j.progress.total)
                  : j.status === "ready" ? 1 : j.status === "error" ? 0.2 : 0.5;
-      inTok = src * 7 * frac; outTok = src * 2.2 * frac;
+      inTok = src * 12 * frac; outTok = src * 12 * frac;
     }
     return inTok / 1e6 * PRICE_PER_1M.input + outTok / 1e6 * PRICE_PER_1M.output;
   }
