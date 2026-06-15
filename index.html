@@ -705,20 +705,45 @@
     $("progressBox").style.display = "block";
     $("pbar").style.display = showBar ? "block" : "none";
     if (showBar) $("pbarFill").style.width = pct + "%";
-    progState = { startMs, done: (p && p.done) || 0, total: (p && p.total) || 0, phase: p && p.phase };
+    progState = { startMs,
+      lastMs: (p && p.updated_at) ? Date.parse(p.updated_at) : startMs,
+      done: (p && p.done) || 0, total: (p && p.total) || 0, phase: p && p.phase };
     tickProgress();
     startProg();
+  }
+
+  // A deliberately COARSE, honest remaining-time phrase. Sections vary in length,
+  // so a precise "54 min" is noise — round to friendly buckets that stay stable.
+  function etaPhrase(secs) {
+    if (secs < 120) return "almost done";
+    if (secs < 600) return "a few minutes left";
+    const min = Math.round(secs / 60);
+    if (min < 60) return "about " + (Math.round(min / 5) * 5) + " minutes left";
+    const hours = Math.round(min / 30) / 2;            // nearest half hour
+    const label = Number.isInteger(hours) ? String(hours) : (Math.floor(hours) + "½");
+    return "about " + label + " hour" + (hours > 1 ? "s" : "") + " left";
   }
 
   function tickProgress() {
     if (!progState) return;
     const parts = [];
     if (progState.startMs) {
-      const elapsed = (Date.now() - progState.startMs) / 1000;
-      parts.push("Started " + fmtDur(elapsed) + " ago");
-      if (progState.phase === "translating" && progState.done > 0 && progState.total) {
-        const per = elapsed / progState.done;
-        parts.push("about " + fmtDur(per * (progState.total - progState.done)) + " left");
+      parts.push("Started " + fmtDur((Date.now() - progState.startMs) / 1000) + " ago");
+      if (progState.phase === "translating" && progState.total) {
+        if (progState.done >= 2) {
+          // Rate from COMPLETED sections only (time up to the last completion,
+          // which is frozen while the current section runs) — so the estimate
+          // doesn't creep up second-by-second. Then count the current section's
+          // elapsed down (capped at one section) so it falls smoothly instead of
+          // jumping at each boundary.
+          const completed = Math.max(1, (progState.lastMs - progState.startMs) / 1000);
+          const rate = completed / progState.done;
+          const intoCurrent = Math.max(0, (Date.now() - progState.lastMs) / 1000);
+          const eta = rate * (progState.total - progState.done) - Math.min(intoCurrent, rate);
+          parts.push(etaPhrase(Math.max(eta, 0)));
+        } else {
+          parts.push("estimating time…");
+        }
       }
     }
     $("progDetail").textContent = parts.join("   ·   ");
